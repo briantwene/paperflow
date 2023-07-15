@@ -2,36 +2,13 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
+use crate::fetcher;
+
 // can expand this to be one function that could hold multiple sources??
-pub async fn fetch_images() -> String {
-    //fetch images from reddit
-    let client = reqwest::Client::builder()
-        .user_agent("Paper")
-        .build()
-        .expect("Failed to create client");
-
-    match client
-        .get("https://www.reddit.com/r/wallpaper.json?limit=3")
-        .send()
-        .await
-    {
-        Ok(response) => match response.text().await {
-            Ok(body) => {
-                //println!("{:?}", body);
-                return body;
-            }
-
-            Err(e) => {
-                println!("error reading response body: {}", e);
-                return String::from("Error occured while reading response body");
-            }
-        },
-
-        Err(e) => {
-            println!("Error handling HTTP request: {}", e);
-            return String::from("Error occured while sending HTTP request");
-        }
-    }
+pub async fn fetch_images(subreddit: String, sort: String) -> String {
+    let mut client = fetcher::Fetcher::default();
+    client.setup();
+    client.get_posts(subreddit, sort).await
 }
 
 // function that will get the raw json, extract the images and return them
@@ -64,7 +41,6 @@ pub fn extract_images(parsed_images: Value) -> Value {
 
         //add the map to vector
         extracted.push(img_item);
-
     }
 
     //convert the map into JSON and return to frontend

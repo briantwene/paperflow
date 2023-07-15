@@ -3,6 +3,7 @@
 
 use serde_json::Value;
 
+mod fetcher;
 mod services;
 
 fn main() {
@@ -13,9 +14,9 @@ fn main() {
 }
 
 #[tauri::command]
-async fn fetch() -> Value {
+async fn fetch(subreddit:String, sort:String) -> Value {
     // get images
-    let thing = services::fetch_images().await;
+    let thing = services::fetch_images(subreddit, sort).await;
     // parse images
     let parsed_images = services::image_parser(thing);
     return services::extract_images(parsed_images);
