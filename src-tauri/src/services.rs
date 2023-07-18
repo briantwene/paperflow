@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde_json::{json, Value};
+use serde_json::{json, value, Value};
 
 use crate::fetcher;
 
@@ -47,4 +47,23 @@ pub fn extract_images(parsed_images: Value) -> Value {
     return json!(extracted);
 }
 
-fn get_image_info() {}
+pub async fn get_image_info(image: String, author: String) -> Value {
+    let mut img_map = HashMap::new();
+    //get and setup fetcher
+    let mut client = fetcher::Fetcher::default();
+    client.setup();
+
+    //run then get info method
+    let img = client.get_info(image, author).await;
+    let parsed_image: Value = serde_json::from_str(&img).expect("error parsing img info data");
+    let image = parsed_image[0]["data"]["children"][0]["data"]
+        .as_object()
+        .unwrap();
+
+    img_map.insert("url", &image["url"]);
+    img_map.insert("author", &image["author"]);
+    img_map.insert("title", &image["title"]);
+    img_map.insert("created", &image["created_utc"]);
+
+    return json!(img_map);
+}
