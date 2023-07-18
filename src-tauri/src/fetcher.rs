@@ -34,7 +34,6 @@ impl Default for Fetcher {
 }
 
 impl Fetcher {
-
     //set up the fetcher with the HTTP client
     pub fn setup(&mut self) {
         self.client = reqwest::Client::builder()
@@ -43,18 +42,13 @@ impl Fetcher {
             .expect("Failed to create client");
     }
 
-   // Method for getting posts
-   pub async fn get_posts(&self, subreddit: String, sort: String) -> String {
+    // Method for getting posts
+    pub async fn get_posts(&self, subreddit: String, sort: String) -> String {
         let url = format!(
             "{}/r/{}.json?sort={}&limit={}",
             self.host, subreddit, sort, self.parameters.limit
         );
-        match self
-            .client
-            .get(&url)
-            .send()
-            .await
-        {
+        match self.client.get(&url).send().await {
             Ok(response) => match response.text().await {
                 Ok(body) => {
                     //println!("{:?}", body);
@@ -70,6 +64,24 @@ impl Fetcher {
             Err(e) => {
                 println!("Error handling HTTP request: {}", e);
                 return String::from("Error occured while sending HTTP request");
+            }
+        }
+    }
+
+    pub async fn get_info(&self, image: String, author: String) -> String {
+        // make the request
+        let url = format!("{}/{}.json", self.host, image);
+
+        match self.client.get(url).send().await {
+            Ok(response) => match response.text().await {
+                Ok(body) => body,
+                Err(e) => {
+                   return String::from("error getting picture info");
+                }
+            },
+
+            Err(e) => {
+               return String::from("error getting picture info");
             }
         }
     }
