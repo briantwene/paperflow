@@ -10,7 +10,7 @@ struct Params {
 impl Default for Params {
     fn default() -> Self {
         Params {
-            limit: 30,
+            limit: 75,
             include_over_18: true,
         }
     }
