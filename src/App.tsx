@@ -6,7 +6,11 @@ function App() {
   return (
     <div className="flex h-screen font-poppins">
       <Navigation />
-      <Outlet />
+      <div className="w-full overflow-auto">
+        {" "}
+        <Outlet />
+      </div>
+
       {/* <TanStackRouterDevtools /> */}
     </div>
   );

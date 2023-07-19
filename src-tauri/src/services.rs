@@ -32,7 +32,9 @@ pub fn extract_images(parsed_images: Value) -> Value {
         let mut img_item = HashMap::new();
 
         let img_data = &image["data"].as_object().unwrap();
+        let img_url = &img_data["url"].as_str().unwrap();
 
+        if img_url.contains("https://i.redd.it/") {
         // add needed data from post into Map
         img_item.insert("id", &img_data["id"]);
         img_item.insert("title", &img_data["title"]);
@@ -41,6 +43,11 @@ pub fn extract_images(parsed_images: Value) -> Value {
 
         //add the map to vector
         extracted.push(img_item);
+        } else {
+            continue;
+        }
+
+
     }
 
     //convert the map into JSON and return to frontend
