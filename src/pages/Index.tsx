@@ -26,7 +26,7 @@ const Index = () => {
       </div>
       <div className="">
         <h1 className="flex items-center h-16 text-2xl font-semibold">
-          Filter
+          Filters
         </h1>
         <Filter />
       </div>
