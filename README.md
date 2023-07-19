@@ -1,5 +1,5 @@
 
-![Logo](https://raw.githubusercontent.com/briantwene/paperflow/main/icons/Base%20logo%20with%20background.svg)
+<center>![Logo](https://raw.githubusercontent.com/briantwene/paperflow/main/icons/Base%20logo%20with%20background.svg)</center>
 
 
 
@@ -7,7 +7,7 @@
 
 **A Cross Platform Desktop app made to discover and download beautiful wallpapers sourced from Reddit.**
 
-Currently in development in the [develop]() branch 🛠️
+Currently in development in the [develop](https://github.com/briantwene/paperflow/tree/develop) branch 🛠️
 
 
 ## Features ✨
@@ -28,13 +28,13 @@ Coming soon...
     
 ## Roadmap 🛣️
 
-- [] Add more Desktop wallpaper subreddits
+- [ ] Add more Desktop wallpaper subreddits
 
-- [] Add more sources such as wallhaven.cc
+- [ ] Add more sources such as wallhaven.cc
 
-- [] Set a Random wallpaper everyday 
+- [ ] Set a Random wallpaper everyday 
 
-- [] Mark images as favorite for later
+- [ ] Mark images as favorite for later
 
 Currently Brainstorming more 🧠
 
