@@ -1,5 +1,7 @@
 
-<center>![Logo](https://raw.githubusercontent.com/briantwene/paperflow/main/icons/Base%20logo%20with%20background.svg)</center>
+<p align="center">
+    <img src="https://raw.githubusercontent.com/briantwene/paperflow/main/icons/Base%20logo%20with%20background.svg"/>
+</p>
 
 
 
