@@ -4,11 +4,20 @@ import Search from "./pages/Search";
 import Favorite from "./pages/Favorite";
 import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
-import App from "./App";
+import { TanStackRouterDevtools } from "./utils/TanStackRouterDevTools";
+import Navigation from "./components/Navigation";
 
 //creating the base route
 const rootRoute = new RootRoute({
-  component: App
+  component: () => (
+    <div className="flex h-screen font-poppins">
+      <Navigation />
+      <div className="w-full overflow-auto">
+        <Outlet />
+      </div>
+      <TanStackRouterDevtools />
+    </div>
+  )
 });
 
 // creating other routes
@@ -56,5 +65,6 @@ declare module "@tanstack/router" {
     router: typeof appRouter;
   }
 }
+
 
 export default appRouter;
