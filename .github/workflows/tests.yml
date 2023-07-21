@@ -1,0 +1,24 @@
+#test to run when there is a PR to the develop branch
+name: CI
+on:
+    pull_request:
+        branches:
+            - develop
+
+    
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Node setup
+              uses: actions/setup-node@v3 
+              with:
+                node-version-file: ".nvmrc"
+                cache: "npm"
+
+
+            - name: lint and build test
+              run: yarn install --frozen-lockfile && yarn lint && yarn run build
+            
