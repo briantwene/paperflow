@@ -1,7 +1,6 @@
-import React from "react";
 import { navEnum } from "./enums";
 import NavLink from "./NavLink";
-import PaperFlowLight from "../assets/paperFlowLight.svg";
+//import PaperFlowLight from "../assets/paperFlowLight.svg";
 import PaperFlowDark from "../assets/paperFlowDark.svg";
 const Navigation = () => {
   return (
@@ -12,7 +11,7 @@ const Navigation = () => {
       <div className=" grow">
         <ul className="flex flex-col justify-between">
           {navEnum.map((item) => (
-            <NavLink item={item} />
+            <NavLink {...item} />
           ))}
         </ul>
       </div>

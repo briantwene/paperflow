@@ -1,12 +1,17 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useState, useEffect } from "react";
 import Filter from "../components/Filter";
-
+type Image = {
+  author: string;
+  id: string;
+  url: string;
+  title: string;
+};
 const Index = () => {
-  const [images, setImages] = useState<object[] | null>(null);
+  const [images, setImages] = useState<Image[] | null>(null);
 
   const fetchImages = async () => {
-    const data: object[] = await invoke("fetch", {
+    const data: Image[] = await invoke("fetch", {
       subreddit: "wallpaper",
       sort: "top"
     });
