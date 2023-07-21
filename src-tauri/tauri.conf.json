@@ -51,6 +51,10 @@
       "csp": null
     },
     "updater": {
+      "windows": {
+        "installMode": "passive",
+        "installerArgs": []
+      },
       "active": true,
       "endpoints": ["https://github.com/briantwene"],
       "dialog": true,
@@ -62,8 +66,7 @@
         "height": 600,
         "resizable": true,
         "title": "PaperFlow",
-        "width": 800,
-        "installMode": "passive"
+        "width": 800
       }
     ]
   }
