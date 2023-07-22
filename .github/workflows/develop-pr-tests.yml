@@ -1,5 +1,5 @@
 #test to run when there is a PR to the develop branch
-name: CI
+name: Develop PR tests
 on:
     pull_request:
         branches:
