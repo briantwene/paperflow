@@ -51,7 +51,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: install Rust stable
+      - name: Install Rust stable
         run:
             curl https://sh.rustup.rs -sSf | sh -s -- -y
 
