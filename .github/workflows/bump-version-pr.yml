@@ -9,7 +9,9 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
     create-release:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-20.04
+        outputs:
+          latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
         steps:
             - uses: actions/checkout@v3
 
