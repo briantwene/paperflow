@@ -132,18 +132,18 @@ jobs:
       secrets: inherit
 
     update-main-branch:
-      name: Merge production -> main
+      name: Merge main -> develop
       needs: [modify-updater-gist]
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v3
           with:
             fetch-depth: 0
-            ref: production
+            ref: main
             # Uses default GITHUB_TOKEN - won't trigger other workflows
             token: ${{ secrets.GITHUB_TOKEN }}
   
-        - name: Merge production -> main
+        - name: Merge main -> develop
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             GIT_AUTHOR_NAME: devOpsBot
@@ -151,7 +151,7 @@ jobs:
             GIT_COMMITTER_NAME: devOpsBot
             GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
           run: |
-            git fetch origin main
-            git checkout main
-            git merge origin/production --ff-only
-            git push origin main 
+            git fetch origin develop
+            git checkout develop
+            git merge origin/main --ff-only
+            git push origin develop 

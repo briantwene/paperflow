@@ -17,7 +17,7 @@ jobs:
         env:
           updater_gist_id: ${{ secrets.UPDATER_GIST_ID }}
         with:
-          github-token: ${{ secrets.DEV_OPS_BOT_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
 
             const { data } = await github.rest.repos.getLatestRelease({
