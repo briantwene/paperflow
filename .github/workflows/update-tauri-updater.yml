@@ -15,7 +15,7 @@ jobs:
       - name: update download urls and signatures for updater gist
         uses: actions/github-script@v6
         env:
-          updater_gist_id: ${{ secrets.UPDATER_GIST_ID }}
+          updater_gist_id: ${{ secrets.GIST_ID }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
