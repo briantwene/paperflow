@@ -1,4 +1,7 @@
-name: Bump Version PR
+# credits: https://royserg.hashnode.dev/bearboard-4-devops
+# repo: https://github.com/Royserg/bear-board/tree/main
+
+name: Release
 
 on:
     push:
@@ -120,3 +123,35 @@ jobs:
                 draft: false,
                 prerelease: false
               })
+
+
+    modify-updater-gist:
+      name: Modify updater.json gist
+      needs: [build-app-and-attach-to-release]
+      uses: briantwene/paperflow/.github/workflows/update-tauri-updater.yml@main
+      secrets: inherit
+
+    update-main-branch:
+      name: Merge production -> main
+      needs: [modify-updater-gist]
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+            ref: production
+            # Uses default GITHUB_TOKEN - won't trigger other workflows
+            token: ${{ secrets.GITHUB_TOKEN }}
+  
+        - name: Merge production -> main
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GIT_AUTHOR_NAME: devOpsBot
+            GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+            GIT_COMMITTER_NAME: devOpsBot
+            GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+          run: |
+            git fetch origin main
+            git checkout main
+            git merge origin/production --ff-only
+            git push origin main 
