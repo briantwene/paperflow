@@ -56,7 +56,9 @@
         "installerArgs": []
       },
       "active": true,
-      "endpoints": ["https://github.com/briantwene"],
+      "endpoints": [
+        "https://gist.githubusercontent.com/briantwene/a4a5e0263c9c0f3a444a2db3f3ee2747/raw"
+      ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJEQjI2OENBQUQ4MDE5RDgKUldUWUdZQ3R5bWl5dldva2RzcmlPbEJTRU5UWmxSUHFqeVhTd25PdmxBTDh1dHcxV3RraVJMNnYK"
     },
