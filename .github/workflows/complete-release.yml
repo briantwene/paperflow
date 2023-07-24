@@ -1,5 +1,6 @@
 name: App Builder
 on:
+  workflow_dispatch:
   pull_request:
      types:
       - closed
@@ -26,17 +27,6 @@ jobs:
           - name: checkout repo
             uses: actions/checkout@v3
 
-          - name: Get Latest Release id
-            id: get_latest_release_id
-            uses: actions/github-script@v6
-            with:
-             script: |
-                const { data } = await github.rest.repos.getLatestRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo
-                })
-
-                return data.id  
 
           - name: Node setup
             uses: actions/setup-node@v3 
@@ -60,6 +50,18 @@ jobs:
               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
             run: yarn install
+
+          - name: Get Latest Release id
+            id: get_latest_release_id
+            uses: actions/github-script@v6
+            with:
+             script: |
+                const { data } = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+                })
+
+                return data.id  
 
           - uses: tauri-apps/tauri-action@v0
             env:
