@@ -13,14 +13,13 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            console.log(context.repo)
-            console.log(context.repo.repo)
-            console.log(context.repo.owner)
+
             const { data } = await github.rest.repos.getLatestRelease({
-            owner: console.log(context.repo.owner),
-            repo: console.log(context.repo.repo)
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            accept: "application/vnd.github+json"
             }).catch(e => console.log(e))
-            console.log(data.id)
+ 
 
             return data.id
  
