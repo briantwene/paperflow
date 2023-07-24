@@ -16,7 +16,7 @@ jobs:
          with:
             script: |
               try {
-                  const {data: releases} = await github.rest.repos.releases({
+                  const {data: releases} = await github.rest.repos.listReleases({
                       owner: "briantwene",
                       repo: "paperflow",
                    });
