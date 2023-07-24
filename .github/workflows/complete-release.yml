@@ -13,13 +13,16 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            console.log(context.repo)
+            console.log(context.repo.repo)
+            console.log(context.repo.owner)
             const { data } = await github.rest.repos.getLatestRelease({
             owner: context.repo.owner,
             repo: context.repo.repo
             })
 
             return data.id
-        env: ${{ secrets.GITHUB_TOKEN }}
+ 
 
   build-app-and-attach-to-release:
     needs: get_release 
