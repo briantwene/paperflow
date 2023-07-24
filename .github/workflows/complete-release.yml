@@ -18,7 +18,8 @@ jobs:
             repo: context.repo.repo
             })
 
-            return data.id  
+            return data.id
+        env: ${{ secrets.GITHUB_TOKEN }}
 
   build-app-and-attach-to-release:
     needs: get_release 
