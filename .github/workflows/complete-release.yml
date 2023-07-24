@@ -15,17 +15,13 @@ jobs:
          uses: actions/github-script@v6
          with:
             script: |
-              try {
                   const {data: releases} = await github.rest.repos.listReleases({
                       owner: "briantwene",
                       repo: "paperflow",
-                   });
+                   }).catch(error => core.setFailed(error.message));
                    
-              const latestRelease = releases.filter(release => release.prerelease);
-              return latestRelease.id
-              } catch (error) {
-                  core.setFailed(error.message)
-              }
+                  const latestRelease = releases.filter(release => release.prerelease);
+                  return latestRelease.id
               
  
 
