@@ -62,6 +62,11 @@ jobs:
                     draft: true,
                     prerelease: false
                   })
+            - name: Save Release ID as Artifact
+              uses: actions/upload-artifact@v2
+              with:
+                name: release-id
+                path: ${{ steps.get_latest_release_id.outputs.result }}
               
     
 
