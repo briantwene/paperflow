@@ -16,8 +16,8 @@ jobs:
           with:
             script: |
               const { data } = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo
+              owner: "briantwene",
+              repo: "paperflow"
               })
               return data.id
  
