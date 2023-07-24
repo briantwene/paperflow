@@ -8,6 +8,12 @@ jobs:
     outputs:
       latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
     steps:
+      - name: Node setup
+        uses: actions/setup-node@v3 
+        with:
+         node-version: 16.15
+         cache: "npm"
+          
       - name: Get Latest Release id
         id: get_latest_release_id
         uses: actions/github-script@v6
