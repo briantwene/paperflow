@@ -22,11 +22,11 @@ jobs:
                    });
                    
               const latestRelease = releases.filter(release => release.prerelease);
-              
+              return latestRelease.id
               } catch (error) {
                   core.setFailed(error.message)
               }
-              return latestRelease.id
+              
  
 
   build-app-and-attach-to-release:
