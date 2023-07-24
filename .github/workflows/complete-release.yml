@@ -10,11 +10,16 @@ jobs:
     outputs:
       release_id: ${{ steps.get_latest_release_id.outputs.result }}
     steps:
-        - name: Get Latest Release id
-          id: get_latest_release_id
-          uses: actions/download-artifact@v2
-          with:
-            name: release-id
+       - name: Get Latest Release id
+         id: get_latest_release_id
+         uses: actions/github-script@v6
+         with:
+            script: |
+              const { data } = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+              })
+              return data.id
  
 
   build-app-and-attach-to-release:
