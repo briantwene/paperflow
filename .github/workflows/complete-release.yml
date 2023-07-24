@@ -4,26 +4,22 @@ on:
 
 jobs:
   get_release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
     steps:
-      - name: Node setup
-        uses: actions/setup-node@v3 
-        with:
-         node-version: 16.15
-         cache: "npm"
-          
-      - name: Get Latest Release id
-        id: get_latest_release_id
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data } = await github.rest.repos.getLatestRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo
-            })
-            return data.id
+        - name: Get Latest Release id
+          id: get_latest_release_id
+          uses: actions/github-script@v6
+          with:
+            script: |
+              const { data } = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+              })
+              return data.id
  
 
   build-app-and-attach-to-release:
