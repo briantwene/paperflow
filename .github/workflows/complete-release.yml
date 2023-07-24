@@ -8,19 +8,13 @@ jobs:
     permissions:
       contents: read
     outputs:
-      latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
+      release_id: ${{ steps.get_latest_release_id.outputs.result }}
     steps:
         - name: Get Latest Release id
           id: get_latest_release_id
-          uses: actions/github-script@v6
+          uses: actions/download-artifact@v2
           with:
-            github-token: ${{ secrets.TAG }}
-            script: |
-              const { data } = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-              })
-              return data.id
+            name: release-id
  
 
   build-app-and-attach-to-release:
@@ -71,12 +65,12 @@ jobs:
               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
             with:
-              releaseId: ${{ needs.get_release.outputs.latest_release_id }}
+              releaseId:  ${{ needs.get_release.outputs.release_id }}
 
           - name: Publish latest release
             uses: actions/github-script@v6
             env:
-              release_id: ${{ needs.get_release.outputs.latest_release_id }}
+              release_id:  ${{ needs.get_release.outputs.release_id }}
             with:
               script: |
                 github.rest.repos.updateRelease({
