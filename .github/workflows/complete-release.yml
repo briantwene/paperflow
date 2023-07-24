@@ -17,9 +17,10 @@ jobs:
             console.log(context.repo.repo)
             console.log(context.repo.owner)
             const { data } = await github.rest.repos.getLatestRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo
-            })
+            owner: console.log(context.repo.owner),
+            repo: console.log(context.repo.repo)
+            }).catch(e => console.log(e))
+            console.log(data.id)
 
             return data.id
  
