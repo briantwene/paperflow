@@ -41,12 +41,13 @@ jobs:
               uses: actions/github-script@v6
               with:
                 script: |
-                  const { data } = await github.rest.repos.getLatestRelease({
+                  const response = await github.rest.repos.getLatestRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo
                   })
-    
-                  return data.id
+                  
+                  console.log(response)
+                  return response.data.id
     
             - name: Set latest release to draft
               uses: actions/github-script@v6
