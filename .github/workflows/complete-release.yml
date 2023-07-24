@@ -16,14 +16,14 @@ jobs:
          with:
             script: |
               try {
-                  const {data: releases} = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+                  const {data: releases} = await github.rest.repos.releases({
                       owner: "briantwene",
                       repo: "paperflow",
                    });
                    
               const latestRelease = releases.filter(release => release.prerelease);
               
-              } catch (error) => {
+              } catch (error) {
                   core.setFailed(error.message)
               }
               return latestRelease.id
