@@ -1,17 +1,10 @@
 name: App Builder
 on:
   workflow_dispatch:
-  pull_request:
-     types:
-      - closed
 
 jobs:
   
   build-app-and-attach-to-release: 
-    if: | 
-     github.event.pull_request.title == 'Version Packages' 
-      && github.event.pull_request.merged == true 
-
     name: Build app & add to release
     permissions:
       contents: write
