@@ -15,11 +15,18 @@ jobs:
          uses: actions/github-script@v6
          with:
             script: |
-              const { data } = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-              })
-              return data.id
+              try {
+                  const {data: releases} = await octokit.request("GET /repos/{owner}/{repo}/releases", {
+                      owner: "briantwene",
+                      repo: "paperflow",
+                   });
+                   
+              const latestRelease = releases.filter(release => release.prerelease);
+              
+              } catch (error) => {
+                  core.setFailed(error.message)
+              }
+              return latestRelease.id
  
 
   build-app-and-attach-to-release:
