@@ -1,0 +1,68 @@
+# credits: https://royserg.hashnode.dev/bearboard-4-devops
+# repo: https://github.com/Royserg/bear-board/tree/main
+
+name: Release
+
+on:
+    push:
+        branches:
+            - "main"
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+    create-release:
+        runs-on: ubuntu-20.04
+        outputs:
+          latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Node setup
+              uses: actions/setup-node@v3 
+              with:
+                node-version-file: ".nvmrc"
+                cache: "npm"
+            
+            - run: yarn install --frozen-lockfile
+
+            - name: Create Release Pull Request or Publish
+              id: changesets
+              uses: changesets/action@v1
+              with:
+                # this should create the github tags hopefully
+                publish: yarn changeset tag
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+
+            - name: Get Latest Release id
+              id: get_latest_release_id
+              uses: actions/github-script@v6
+              with:
+                script: |
+                  const { data } = await github.rest.repos.getLatestRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                  })
+    
+                  return data.id
+    
+            - name: Set latest release to draft
+              uses: actions/github-script@v6
+              env:
+                release_id: ${{ steps.get_latest_release_id.outputs.result }}
+              with:
+                script: |
+                  github.rest.repos.updateRelease({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    release_id: process.env.release_id,
+                    draft: true,
+                    prerelease: false
+                  })
+              
+    
+
+
+    
