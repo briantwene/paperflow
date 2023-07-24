@@ -3,8 +3,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  
-  build-app-and-attach-to-release: 
+  get_release:
+    runs-on: ubuntu-20.04
+    outputs:
+      latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
+    steps:
+      - name: Get Latest Release id
+        id: get_latest_release_id
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data } = await github.rest.repos.getLatestRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo
+            })
+
+            return data.id  
+
+  build-app-and-attach-to-release:
+    needs: get_release 
     name: Build app & add to release
     permissions:
       contents: write
@@ -44,17 +61,6 @@ jobs:
               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
             run: yarn install
 
-          - name: Get Latest Release id
-            id: get_latest_release_id
-            uses: actions/github-script@v6
-            with:
-             script: |
-                const { data } = await github.rest.repos.getLatestRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo
-                })
-
-                return data.id  
 
           - uses: tauri-apps/tauri-action@v0
             env:
@@ -62,12 +68,12 @@ jobs:
               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
             with:
-              releaseId: ${{ steps.get_latest_release_id.outputs.result }}
+              releaseId: ${{ needs.get_release.outputs.latest_release_id }}
 
           - name: Publish latest release
             uses: actions/github-script@v6
             env:
-              release_id: ${{ steps.get_latest_release_id.outputs.result }}
+              release_id: ${{ needs.get_release.outputs.latest_release_id }}
             with:
               script: |
                 github.rest.repos.updateRelease({
