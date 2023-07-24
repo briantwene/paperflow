@@ -9,7 +9,7 @@ on:
             - "main"
 
 
-
+# run only if its 
 jobs:
     create-release:
         runs-on: ubuntu-20.04
@@ -59,8 +59,8 @@ jobs:
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     release_id: process.env.release_id,
-                    draft: true,
-                    prerelease: false
+                    draft: false,
+                    prerelease: true
                   })
               
     
