@@ -1,5 +1,11 @@
 # paperflow
 
+## 0.0.4
+
+### Patch Changes
+
+- 53e49ac: Changed up github CI/CD worklflow, when creating a release
+
 ## 0.0.3
 
 ### Patch Changes
