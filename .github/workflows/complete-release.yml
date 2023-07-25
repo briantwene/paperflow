@@ -81,6 +81,7 @@ jobs:
               release_id:  ${{ needs.get_release.outputs.release_id }}
             with:
               script: |
+                console.log(process.env.release_id)
                 github.rest.repos.updateRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
