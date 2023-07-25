@@ -19,9 +19,8 @@ jobs:
                       owner: "briantwene",
                       repo: "paperflow",
                    }).catch(error => core.setFailed(error.message));
-                   
                   const latestRelease = releases.filter(release => release.prerelease);
-                  return latestRelease.id
+                  core.setOutput('release_id', latestRelease.id)
               
  
 
@@ -81,7 +80,7 @@ jobs:
               release_id:  ${{ needs.get_release.outputs.release_id }}
             with:
               script: |
-                console.log(process.env.release_id)
+                console.log("the iddd:", process.env.release_id)
                 github.rest.repos.updateRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
