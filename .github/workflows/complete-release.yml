@@ -6,7 +6,7 @@ jobs:
   get_release:
     runs-on: ubuntu-latest
     outputs:
-        release_id: ${{ steps.get_release_id.outputs.results }}  
+        release_id: ${{ steps.get_release_id.outputs.id }}  
     steps:
        - name: Get Latest Release id
          id: get_release_id
@@ -20,8 +20,7 @@ jobs:
                    
                   const [latestRelease] = releases.filter(release => release.prerelease);
                   console.log("releaseId:", latestRelease)
-                  return latestRelease.id
-       
+                  core.setOutput("id", latestRelease.id)       
 
   build-app-and-attach-to-release:
     needs: get_release 
