@@ -5,39 +5,36 @@ on:
 jobs:
   get_release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    
+    outputs:
+      release_id:
+          description: "id of prerelease"
+          value: ${{ steps.get_release_id.outputs.id }}      
     steps:
        - name: Get Latest Release id
-         id: get_latest_release_id
+         id: get_release_id
          uses: actions/github-script@v6
          with:
             script: |
                   const {data: releases} = await github.rest.repos.listReleases({
-                      owner: "briantwene",
-                      repo: "paperflow",
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
                    }).catch(error => core.setFailed(error.message));
+                   
                   const latestRelease = releases.filter(release => release.prerelease);
-                  return latestRelease.id
+                  console.log(latestRelease.id)
+                  core.setOutput("id", String(latestRelease.id))
                   
-    outputs:
-      release_id: ${{ steps.get_latest_release_id.outputs.result }}      
-              
- 
+       
 
   build-app-and-attach-to-release:
     needs: get_release 
     name: Build app & add to release
     permissions:
       contents: write
-
     strategy:
-
           fail-fast: false
           matrix:
               platform: [macos-latest, ubuntu-latest, windows-latest]
-
     runs-on: ${{ matrix.platform }}
     steps:
           - name: checkout repo
@@ -74,12 +71,12 @@ jobs:
               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
             with:
-              releaseId:  ${{ needs.get_release.outputs.release_id }}
+              releaseId:  ${{ needs.get_release.outputs.id }}
 
           - name: Publish latest release
             uses: actions/github-script@v6
             env:
-              release_id:  ${{ needs.get_release.outputs.release_id }}
+              release_id:  ${{ needs.get_release.outputs.id }}
             with:
               script: |
                 console.log("the iddd:", process.env.release_id)
