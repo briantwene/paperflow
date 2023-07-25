@@ -65,7 +65,8 @@ jobs:
                 }
               }
             }, null, 2);
-
+            
+            console.log("gist id":, process.env.updater_gist_id)
             await github.rest.gists.update({
               gist_id: process.env.updater_gist_id,
               files: {
