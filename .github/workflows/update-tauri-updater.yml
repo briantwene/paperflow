@@ -10,7 +10,7 @@ on:
 jobs:
   modify-updater-gist:
     permissions:
-      contents: write
+      contents: write-all
     name: Modify updater.json gist
     runs-on: ubuntu-latest
     steps:
