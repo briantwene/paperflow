@@ -7,8 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      release_id: ${{ steps.get_latest_release_id.outputs.result }}
+    
     steps:
        - name: Get Latest Release id
          id: get_latest_release_id
@@ -20,7 +19,10 @@ jobs:
                       repo: "paperflow",
                    }).catch(error => core.setFailed(error.message));
                   const latestRelease = releases.filter(release => release.prerelease);
-                  core.setOutput('release_id', latestRelease.id)
+                  return latestRelease.id
+                  
+    outputs:
+      release_id: ${{ steps.get_latest_release_id.outputs.result }}      
               
  
 
