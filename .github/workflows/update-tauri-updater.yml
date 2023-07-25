@@ -6,6 +6,10 @@ name: Modify updater with latest release
 on: 
   workflow_dispatch:
   workflow_call:
+    secrets:
+      TAG:
+        description: 'A token passed from the caller workflow'
+        required: true
 
 jobs:
   modify-updater-gist:
