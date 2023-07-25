@@ -44,30 +44,30 @@ jobs:
               cache: "npm"
 
 
-#           - name: Install Rust stable
-#             run:
-#               curl https://sh.rustup.rs -sSf | sh -s -- -y
+          - name: Install Rust stable
+            run:
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
 
-#           - name: Install dependencies (ubuntu only)
-#             if: matrix.platform == 'ubuntu-latest'
-#             run: |
-#               sudo apt-get update &&
-#               sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
+          - name: Install dependencies (ubuntu only)
+            if: matrix.platform == 'ubuntu-latest'
+            run: |
+              sudo apt-get update &&
+              sudo apt-get install -y libgtk-3-dev webkit2gtk-4.0 libappindicator3-dev librsvg2-dev patchelf
 
-#           - name: Install app dependencies and build it
-#             env:
-#               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-#               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-#             run: yarn install
+          - name: Install app dependencies and build it
+            env:
+              TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+              TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+            run: yarn install
 
 
-#           - uses: tauri-apps/tauri-action@v0
-#             env:
-#               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#               TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-#               TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-#             with:
-#               releaseId:  ${{ needs.get_release.outputs.release_id }}
+          - uses: tauri-apps/tauri-action@v0
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+              TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+            with:
+              releaseId:  ${{ needs.get_release.outputs.release_id }}
 
           - name: Publish latest release
             uses: actions/github-script@v6
@@ -85,33 +85,33 @@ jobs:
                 })
 
 
-#   modify-updater-gist:
-#       name: Modify updater.json gist
-#       needs: [build-app-and-attach-to-release]
-#       uses: briantwene/paperflow/.github/workflows/update-tauri-updater.yml@main
-#       secrets: inherit
+  modify-updater-gist:
+      name: Modify updater.json gist
+      needs: [build-app-and-attach-to-release]
+      uses: briantwene/paperflow/.github/workflows/update-tauri-updater.yml@main
+      secrets: inherit
     
-#   update-main-branch:
-#       name: Merge main -> develop
-#       needs: [modify-updater-gist]
-#       runs-on: ubuntu-latest
-#       steps:
-#         - uses: actions/checkout@v3
-#           with:
-#             fetch-depth: 0
-#             ref: main
-#             # Uses default GITHUB_TOKEN - won't trigger other workflows
-#             token: ${{ secrets.GITHUB_TOKEN }}
+  update-main-branch:
+      name: Merge main -> develop
+      needs: [modify-updater-gist]
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+            ref: main
+            # Uses default GITHUB_TOKEN - won't trigger other workflows
+            token: ${{ secrets.GITHUB_TOKEN }}
   
-#         - name: Merge main -> develop
-#           env:
-#             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#             GIT_AUTHOR_NAME: devOpsBot
-#             GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
-#             GIT_COMMITTER_NAME: devOpsBot
-#             GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-#           run: |
-#             git fetch origin develop
-#             git checkout develop
-#             git merge origin/main --ff-only
-#             git push origin develop 
+        - name: Merge main -> develop
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GIT_AUTHOR_NAME: devOpsBot
+            GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+            GIT_COMMITTER_NAME: devOpsBot
+            GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+          run: |
+            git fetch origin develop
+            git checkout develop
+            git merge origin/main --ff-only
+            git push origin develop 
