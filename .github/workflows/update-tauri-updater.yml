@@ -10,7 +10,7 @@ on:
 jobs:
   modify-updater-gist:
     permissions:
-      contents: write-all
+      contents: write
     name: Modify updater.json gist
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +19,7 @@ jobs:
         env:
           updater_gist_id: ${{ secrets.GIST_ID }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.TAG }}
           script: |
 
             const { data } = await github.rest.repos.getLatestRelease({
