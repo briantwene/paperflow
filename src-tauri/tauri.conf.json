@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "paperflow",
-    "version": "0.1.0"
+    "version": "../package.json"
   },
   "tauri": {
     "allowlist": {
@@ -51,7 +51,14 @@
       "csp": null
     },
     "updater": {
-      "active": false
+      "windows": {
+        "installMode": "passive",
+        "installerArgs": []
+      },
+      "active": true,
+      "endpoints": ["https://github.com/briantwene"],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJEQjI2OENBQUQ4MDE5RDgKUldUWUdZQ3R5bWl5dldva2RzcmlPbEJTRU5UWmxSUHFqeVhTd25PdmxBTDh1dHcxV3RraVJMNnYK"
     },
     "windows": [
       {
