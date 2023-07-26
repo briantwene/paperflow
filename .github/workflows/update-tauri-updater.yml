@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write
     name: Modify updater.json gist
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: update download urls and signatures for updater gist
         uses: actions/github-script@v6
@@ -69,9 +69,8 @@ jobs:
               }
             }, null, 2);
             
-            console.log("da id",process.env.updater_gist_id)
             await github.rest.gists.update({
-              gist_id: "78a8736ef9d58154120b0c49338178de",
+              gist_id: process.env.updater_gist_id,
               files: {
                 "updater.json": {
                   content: newGistContent
