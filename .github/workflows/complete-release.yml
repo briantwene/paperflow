@@ -91,6 +91,7 @@ jobs:
       uses: briantwene/paperflow/.github/workflows/update-tauri-updater.yml@main
       secrets:
         TAG: ${{ secrets.TAG }}
+        GIST_ID: ${{ secrets.GIST_ID }}
     
 #   update-main-branch:
 #       name: Merge main -> develop
