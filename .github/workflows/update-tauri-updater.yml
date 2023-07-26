@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write
     name: Modify updater.json gist
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: update download urls and signatures for updater gist
         uses: actions/github-script@v6
