@@ -10,6 +10,9 @@ on:
       TAG:
         description: 'A token passed from the caller workflow'
         required: true
+      GIST_ID:
+        description: 'id of updater gist'
+        required: true
 
 jobs:
   modify-updater-gist:
@@ -66,7 +69,6 @@ jobs:
               }
             }, null, 2);
             
-            console.log("gist id:", process.env.updater_gist_id)
             await github.rest.gists.update({
               gist_id: process.env.updater_gist_id,
               files: {
