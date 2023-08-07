@@ -6,13 +6,14 @@ import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
 import { TanStackRouterDevtools } from "./utils/TanStackRouterDevTools";
 import Navigation from "./components/Navigation";
+import View from "./pages/View";
 
 //creating the base route
 const rootRoute = new RootRoute({
   component: () => (
     <div className="flex h-screen font-poppins">
       <Navigation />
-      <div className="w-full overflow-auto">
+      <div className="w-screen overflow-auto">
         <Outlet />
       </div>
       <TanStackRouterDevtools />
@@ -48,6 +49,21 @@ const settingsRoute = new Route({
   path: "settings",
   component: Settings
 });
+const viewRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: "/view"
+});
+const viewImageRoute = new Route({
+  getParentRoute: () => viewRoute,
+  path: "$id",
+  component: View,
+  loader: ({ params: { id } }) => {
+    console.log(id);
+    return {
+      id
+    };
+  }
+});
 
 //create a tree from the single routes
 const routeTree = rootRoute.addChildren([
@@ -55,7 +71,8 @@ const routeTree = rootRoute.addChildren([
   favoriteRoute,
   collectionRoute,
   settingsRoute,
-  searchRoute
+  searchRoute,
+  viewRoute.addChildren([viewImageRoute])
 ]);
 
 const appRouter = new Router({ routeTree });

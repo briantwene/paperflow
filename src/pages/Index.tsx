@@ -1,27 +1,10 @@
-import { invoke } from "@tauri-apps/api/tauri";
-import { useState, useEffect } from "react";
 import Filter from "../components/Filter";
-type Image = {
-  author: string;
-  id: string;
-  url: string;
-  title: string;
-};
+import { Link } from "@tanstack/router";
+
+import useImages from "../hooks/useImages";
+
 const Index = () => {
-  const [images, setImages] = useState<Image[] | null>(null);
-
-  const fetchImages = async () => {
-    const data: Image[] = await invoke("fetch", {
-      subreddit: "wallpaper",
-      sort: "top"
-    });
-    data.shift();
-    setImages(data);
-  };
-
-  useEffect(() => {
-    fetchImages();
-  }, []);
+  const { images, error, isLoading } = useImages("wallpaper", "top");
 
   console.log(images);
   return (
@@ -38,7 +21,14 @@ const Index = () => {
 
       <div className="gap-4 mb-6 columns-1 sm:columns-2 lg:columns-3 ">
         {images?.map((image) => (
-          <img className="w-full h-auto mb-4" src={image?.url} alt="" />
+          <Link
+            to="/view/$id"
+            params={{
+              id: image.id
+            }}
+          >
+            <img className="w-full h-auto mb-4" src={image?.url} alt="" />
+          </Link>
         ))}
       </div>
     </div>
