@@ -9,6 +9,8 @@ const View = () => {
 
   if (isLoading) {
     return <div>Loading</div>;
+  } else if (error) {
+    return <div>{error}</div>;
   } else {
     return (
       <div className="flex flex-col w-full h-full px-8 ">

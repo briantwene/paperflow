@@ -1,15 +1,15 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import { Fetcher } from "swr";
-import { Image, ImageInfo } from "./models";
+
+import { Image, ImageView } from "./models";
 
 //fetcher function to use with useSWR
-export const fetcher: Fetcher<Image[] | ImageInfo, string> = async (
-  args
-): Promise<ImageInfo | Image[]> => {
-  console.log(args);
-  const [key, params] = args;
+export const fetcher = async (
+  key: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any
+): Promise<ImageView | Image[]> => {
   //use invoke function
-  const data: Image[] | ImageInfo = await invoke(key, params);
+  const data: Image[] | ImageView = await invoke(key, params);
 
   return data;
 };

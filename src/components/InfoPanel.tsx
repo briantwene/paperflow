@@ -5,8 +5,7 @@ type Props = {
 };
 
 const InfoPanel = ({ image }: Props) => {
-  console.log(image);
-  const infoMap = Object.keys(image).map((item) => (
+  const infoMap = Object.keys(image || {}).map((item) => (
     <div className="flex-1">
       <p className="font-light capitalize text-slate-400 ">{item}</p>
       <p>{image[item as keyof ImageInfo]}</p>
