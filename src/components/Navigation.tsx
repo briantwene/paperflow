@@ -4,7 +4,7 @@ import NavLink from "./NavLink";
 import PaperFlowDark from "../assets/paperFlowDark.svg";
 const Navigation = () => {
   return (
-    <nav className="flex flex-col w-64 border-r border-slate-900/10 dark:border-white/10">
+    <nav className="flex flex-col border-r w-72 border-slate-900/10 dark:border-white/10">
       <header className="flex h-24 border-b border-slate-900/10 dark:border-white/10">
         <img src={PaperFlowDark} className="p-6" />
       </header>

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde_json::{json, value, Value};
+use serde_json::{json, value, Value, Map};
 
 use crate::fetcher;
 
@@ -14,6 +14,7 @@ pub async fn fetch_images(subreddit: String, sort: String) -> String {
 // function that will get the raw json, extract the images and return them
 pub fn image_parser(image_data: String) -> Value {
     // convert the data into a JSON format
+   
     let parsed_response: Value =
         serde_json::from_str(&image_data).expect("there was an error converting response to json");
 
@@ -54,23 +55,40 @@ pub fn extract_images(parsed_images: Value) -> Value {
     return json!(extracted);
 }
 
-pub async fn get_image_info(image: String, author: String) -> Value {
-    let mut img_map = HashMap::new();
+pub async fn get_image_info(image: String) -> Value {
+    let mut img_map = Map::new();
+    let mut info_map = Map::new();
     //get and setup fetcher
     let mut client = fetcher::Fetcher::default();
     client.setup();
 
     //run then get info method
-    let img = client.get_info(image, author).await;
+    let img = client.get_info(image).await;
+   
     let parsed_image: Value = serde_json::from_str(&img).expect("error parsing img info data");
     let image = parsed_image[0]["data"]["children"][0]["data"]
         .as_object()
         .unwrap();
 
-    img_map.insert("url", &image["url"]);
-    img_map.insert("author", &image["author"]);
-    img_map.insert("title", &image["title"]);
-    img_map.insert("created", &image["created_utc"]);
+    let author = &image["author"];
+    let created = &image["created_utc"];
+    let karma = &image["score"];
+    let subreddit = &image["subreddit_name_prefixed"];
+    let url = &image["url"];
+    let title = &image["title"];
 
-    return json!(img_map);
+    
+    img_map.insert(String::from("author"), author.clone());
+    img_map.insert(String::from("created"), created.clone());
+    img_map.insert(String::from("karma"), karma.clone());
+    img_map.insert(String::from("subreddit"), subreddit.clone());
+
+
+    info_map.insert(String::from("url"), url.clone());
+    info_map.insert(String::from("title"), title.clone());
+    info_map.insert(String::from("info"), json!(img_map));
+
+    //somehow get the image size and resoultion in rust
+
+    return json!(info_map);
 }

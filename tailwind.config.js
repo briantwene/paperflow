@@ -11,9 +11,16 @@ export default {
         poppins: ["Poppins", "Inter"]
       },
       colors: {
+        text: "#fafafa",
+        background: "#121212",
         primary: "#118df0",
         secondary: "#0e2f56",
-        offwhite: "#ececda"
+        accent: "#fdfdfd"
+      },
+      fontSize: {
+        text: "0.778rem",
+        base: "1rem",
+        title: "1.778rem"
       }
     }
   },

@@ -1,4 +1,6 @@
+
 use reqwest::Client;
+
 
 // parameters for search options
 struct Params {
@@ -48,6 +50,7 @@ impl Fetcher {
             "{}/r/{}.json?sort={}&limit={}",
             self.host, subreddit, sort, self.parameters.limit
         );
+     
         match self.client.get(&url).send().await {
             Ok(response) => match response.text().await {
                 Ok(body) => {
@@ -68,7 +71,7 @@ impl Fetcher {
         }
     }
 
-    pub async fn get_info(&self, image: String, author: String) -> String {
+    pub async fn get_info(&self, image: String) -> String {
         // make the request
         let url = format!("{}/{}.json", self.host, image);
 
@@ -85,4 +88,6 @@ impl Fetcher {
             }
         }
     }
+
+   
 }

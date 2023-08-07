@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde_json::Value;
-
 mod fetcher;
 mod services;
 
@@ -24,9 +23,9 @@ async fn fetch(subreddit:String, sort:String) -> Value {
 
 
 #[tauri::command]
-async fn view_img(id:String, redditor:String) -> Value {
+async fn view_img(id:String) -> Value {
     //first 
 
-    services::get_image_info(id, redditor).await
+    services::get_image_info(id).await
     
 }
