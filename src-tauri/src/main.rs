@@ -1,31 +1,40 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use tauri_plugin_log::LogTarget;
+use provider::models::{Image, ImageInfo};
 
-use serde_json::Value;
-mod fetcher;
-mod services;
+
+mod organiser;
+mod provider;
+
+mod utils;
+mod wallpaper;
 
 fn main() {
-    tauri::Builder::default()
+    tauri::Builder::default().plugin(tauri_plugin_log::Builder::default().targets([
+        LogTarget::LogDir,
+        LogTarget::Stdout,
+        LogTarget::Webview,
+    ]).build())
         .invoke_handler(tauri::generate_handler![fetch, view_img])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 #[tauri::command]
-async fn fetch(subreddit:String, sort:String) -> Value {
+async fn fetch(subreddit: String, sort: String) -> Result<Vec<Image>, String> {
     // get images
-    let thing = services::fetch_images(subreddit, sort).await;
-    // parse images
-    let parsed_images = services::image_parser(thing);
-    return services::extract_images(parsed_images);
+    match provider::reddit::get_images(subreddit, sort).await {
+        Ok(images) => Ok(images),
+        Err(_err) => Err("There was an error in getting the data".to_string()),
+    }
 }
 
-
 #[tauri::command]
-async fn view_img(id:String) -> Value {
-    //first 
-
-    services::get_image_info(id).await
-    
+async fn view_img(id: String) -> Result<ImageInfo, String> {
+    println!("{}", id);
+    match provider::reddit::get_info(id).await {
+        Ok(images) => Ok(images),
+        Err(_err) => Err("There was an error in getting the data".to_string()),
+    }
 }
