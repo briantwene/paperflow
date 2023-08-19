@@ -26,6 +26,8 @@ serde_with = {version = "3.2.0", features = ["chrono"] }
 chrono = {version = "0.4.26"}
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 log = "^0.4"
+user_agent = "0.11"
+os_info = "3.7.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
