@@ -1,11 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use tauri_plugin_log::LogTarget;
 use provider::models::{Image, ImageInfo};
 
 
 mod organiser;
 mod provider;
+mod auth;
 
 mod utils;
 mod wallpaper;
@@ -23,6 +25,8 @@ fn main() {
 
 #[tauri::command]
 async fn fetch(subreddit: String, sort: String) -> Result<Vec<Image>, String> {
+
+  
     // get images
     match provider::reddit::get_images(subreddit, sort).await {
         Ok(images) => Ok(images),

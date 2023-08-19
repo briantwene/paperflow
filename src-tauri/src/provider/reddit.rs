@@ -1,4 +1,5 @@
-use crate::provider::models::ImageInfo;
+use crate::auth::reddit::get_token;
+use crate::{provider::models::ImageInfo, auth::reddit::is_valid_token};
 use crate::utils::create_http;
 
 use serde_json::{from_value, Value};
@@ -7,20 +8,26 @@ use std::error::Error;
 
 use super::models::Image;
 
-const HOST_URL: &str = "https://www.reddit.com";
+const HOST_URL: &str = "https://oauth.reddit.com";
 const FETCH_LIMIT: i32 = 75;
 
 //fetch images 
 pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, Box<dyn Error>> {
     let url = format!(
-        "{}/r/{}.json?sort={}&limit={}",
-        HOST_URL, subreddit, sort, FETCH_LIMIT
+        "{}/r/{}?limit={}&sort={}",
+        HOST_URL, subreddit, FETCH_LIMIT, sort
     );
+
+    is_valid_token().await?;
+    let token = get_token().await?;
+
+
     let fetcher = create_http();
 
-    // Make HTTP request and get the response
-    let response = fetcher.get(url).send().await?;
+    // Make HTTP request and get the responsemood
+    let response = fetcher.get(url).bearer_auth(token).send().await?;
     let response = response.json::<Value>().await?;
+    println!("{:#?}", response);
 
     // Extract image data from response
     let images = response["data"]["children"].as_array().unwrap();
@@ -48,7 +55,7 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, B
 
 //fetch image info 
 pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
-    let url = format!("{}/{}.json", HOST_URL, image_id);
+    let url = format!("https://reddit.com/{}.json", image_id);
     println!("{url}");
 
     // let mut img_map = Map::new();
@@ -59,6 +66,8 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     //run then get info method
     let response = fetcher.get(url).send().await?;
     let response = response.json::<Value>().await?;
+    println!("{:#?}", response);
+
 
     let image = &response[0]["data"]["children"][0]["data"];
 
