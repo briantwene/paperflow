@@ -3,7 +3,6 @@ use reqwest::Client;
 
 pub fn create_http() -> Client {
     let ua = generate_user_agent();
-    println!("{}", ua);
     return reqwest::Client::builder()
         .user_agent(ua)
         .build()
