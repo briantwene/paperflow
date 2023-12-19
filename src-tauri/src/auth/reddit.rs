@@ -2,6 +2,7 @@ use chrono::{Duration, TimeZone, Utc};
 use futures::executor;
 use keyring::{Entry, Error};
 use serde_json::Value;
+use tauri::App;
 use std::{sync::mpsc::{channel, Sender}, i64};
 use url::Url;
 
@@ -13,11 +14,13 @@ use std::{collections::HashMap, env::var, thread};
 use tiny_http::{Request, Response, Server, StatusCode};
 use webbrowser;
 use TokenContext::{Expire, Initial};
+use crate::config::AppConfig;
 
-const BASE_URL: &str = "http://localhost:32463";
-// const TOKEN_URL: &str = "https://www.reddit.com/api/v1/access_token";
-const TOKEN_URL: &str = "http://localhost:3000/reddit/auth";
+
+
 async fn store_token<T: TokenData>(data: T, context: TokenContext) -> Result<(), Error> {
+
+   
     match context {
         Initial => {
             //get the access token, refresh token
@@ -46,7 +49,7 @@ async fn store_token<T: TokenData>(data: T, context: TokenContext) -> Result<(),
 
             //create new entries to the secure store
             let access_entry = Entry::new("PaperFlow", "reddit_token")?;
-            let expiry_entry = Entry::new("PaperFlow", "reddexpiry")?;
+            let expiry_entry = Entry::new("PaperFlow", "reddit_expiry")?;
 
             access_entry.set_password(&access_token)?;
             expiry_entry.set_password(&token_expiry)?;
@@ -60,19 +63,23 @@ pub async fn get_access_token(
     context: TokenContext,
     code: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+
     let client = create_http();
     let user_agent = generate_user_agent();
     println!("this function is running");
+    let config =  AppConfig::load();
 
+    let server_url = config.server_url;
     match context {
         Initial => {
+            println!("initializing the token for the first time");
             let params = [("code", code.unwrap())];
 
             // Send POST request to get the access token
 
             // TODO: Make sure to later authenticate the route with JWT maybe for external auth service
             let response = client
-                .post(TOKEN_URL)
+                .post(format!("{}/reddit/auth", server_url))
                 // .basic_auth(client_id, Some(""))
                 .header("User-Agent", user_agent)
                 .form(&params)
@@ -101,14 +108,15 @@ pub async fn get_access_token(
             }
         }
         Expire => {
-            let refresh = Entry::new("PaperFlow", "refresh")?.get_password()?;
-            let params = [("grant_type", "refresh_token"), ("refresh_token", &refresh)];
+            let refresh = Entry::new("PaperFlow", "reddit_refresh").unwrap();
+            let token = refresh.get_password().unwrap();
+            let params = [("refresh_token", &token)];
+
 
             // Send POST request to get the access token
-        println!("refreshing the token");
             // TODO: Make sure to later authenticate the route with JWT maybe for external auth service
             let response = client
-                .post(TOKEN_URL)
+                .post(format!("{}/reddit/refresh", server_url))
                 // .basic_auth(client_id, Some(""))
                 .header("User-Agent", user_agent)
                 .form(&params)
@@ -170,6 +178,7 @@ pub async fn is_valid_token() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!("The token is expired");
         get_access_token(Expire, None).await?;
+        println!("The token has been refreshed (it hasnt)");
         Ok(()) // Refresh the token
     }
 }
@@ -288,8 +297,10 @@ fn handle_callback(
     request: Request,
     sender: Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+
+    let base_url = AppConfig::load().server_url;
     let url = request.url();
-    let parsed_url = Url::parse(&format!("{BASE_URL}{url}"))?;
+    let parsed_url = Url::parse(&format!("{base_url}{url}"))?;
     let query_map: HashMap<String, String> = parsed_url.query_pairs().into_owned().collect();
     let code = query_map.get("code").unwrap().to_string();
     println!("{code}");

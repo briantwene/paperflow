@@ -33,6 +33,7 @@ tiny_http = "0.12"
 url = "2.4.0"
 keyring = "2.0.5"
 futures = "0.3.29"
+dotenv = "0.15.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

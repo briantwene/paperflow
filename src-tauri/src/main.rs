@@ -15,6 +15,7 @@ mod auth;
 
 mod utils;
 mod wallpaper;
+mod config;
 
 fn main() {
     tauri::Builder::default().plugin(tauri_plugin_log::Builder::default().targets([

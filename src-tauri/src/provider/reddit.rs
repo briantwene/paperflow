@@ -26,7 +26,6 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, B
     // Make HTTP request and get the responsemood
     let response = fetcher.get(url).bearer_auth(token).send().await?;
     let response = response.json::<Value>().await?;
-    println!("{:#?}", response);
 
     // Extract image data from response
     let images = response["data"]["children"].as_array().unwrap();
