@@ -1,5 +1,5 @@
-use std::env;
-use dotenv::dotenv;
+// use std::env;
+// use dotenv::dotenv;
 
 pub struct AppConfig {
     pub server_url: String,
@@ -10,10 +10,9 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn load() -> Self {
 
-        dotenv().ok();
 
-        let server_url = env::var("AUTH_URL").expect("SERVER_URL not set");
-        let base_url  =  env::var("LOCAL_BASE_URL").expect("BASE_URL not set");
+        let server_url = "https://auth-paperflow.koyeb.app".to_string();
+        let base_url  =  "http://localhost:32463".to_string();
 
         // Load other configuration variables similarly
 

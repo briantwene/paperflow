@@ -1,19 +1,14 @@
-use chrono::{Duration, TimeZone, Utc};
-use futures::executor;
+use chrono::Utc;
 use keyring::{Entry, Error};
-use serde_json::Value;
-use tauri::App;
 use std::{sync::mpsc::{channel, Sender}, i64};
 use url::Url;
-
 use super::models::{
-    AccessTokenResponse, RefreshTokenResponse, TokenContext, TokenData, TokenResponses,
+    AccessTokenResponse, RefreshTokenResponse, TokenContext, TokenData,
 };
 use crate::utils::{create_http, generate_user_agent};
-use std::{collections::HashMap, env::var, thread};
+use std::{collections::HashMap, thread};
 use tiny_http::{Request, Response, Server, StatusCode};
-use webbrowser;
-use TokenContext::{Expire, Initial};
+use TokenContext::{Expire, Initial, Revoke};
 use crate::config::AppConfig;
 
 
@@ -56,23 +51,22 @@ async fn store_token<T: TokenData>(data: T, context: TokenContext) -> Result<(),
 
             Ok(())
         }
+        Revoke => todo!(),
     }
 }
 
-pub async fn get_access_token(
+pub async fn do_token_action(
     context: TokenContext,
     code: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
 
     let client = create_http();
     let user_agent = generate_user_agent();
-    println!("this function is running");
     let config =  AppConfig::load();
 
     let server_url = config.server_url;
     match context {
         Initial => {
-            println!("initializing the token for the first time");
             let params = [("code", code.unwrap())];
 
             // Send POST request to get the access token
@@ -102,8 +96,8 @@ pub async fn get_access_token(
                 // could do more matching here to handle the error
                 let status_code = response.status();
                 let response_text = response.text().await?;
-                eprintln!("Request failed with status code: {}", status_code);
-                eprintln!("Response: {}", response_text);
+                println!("Request failed with status code: {}", status_code);
+                println!("Response: {}", response_text);
                 Err("Request failed".into())
             }
         }
@@ -139,11 +133,46 @@ pub async fn get_access_token(
                 // could do more matching here to handle the error
                 let status_code = response.status();
                 let response_text = response.text().await?;
-                eprintln!("Request failed with status code: {}", status_code);
-                eprintln!("Response: {}", response_text);
+                println!("Request failed with status code: {}", status_code);
+                println!("Response: {}", response_text);
                 Err("Request failed".into())
             }
         }
+        Revoke => {
+            let refresh = Entry::new("PaperFlow", "reddit_refresh").unwrap();
+            let access = Entry::new("PaperFlow", "reddit_token").unwrap();
+            let expiry = Entry::new("PaperFlow", "reddit_expiry").unwrap();
+            let token = refresh.get_password().unwrap();
+            let params = [("token", &token)];
+
+            // Send POST request to get the access token
+            let response = client
+            .post(format!("{}/reddit/revoke", server_url))
+            // .basic_auth(client_id, Some(""))
+            .header("User-Agent", user_agent)
+            .form(&params)
+            .send()
+            .await?;
+
+        // if the response is successful
+        if response.status().is_success() {
+            // parse the response
+            access.delete_password()?;
+            refresh.delete_password()?;
+            expiry.delete_password()?;
+            println!("token has been revoked");
+
+            Ok(())
+        } else {
+            // Handle the case where the response status is not successful
+            // could do more matching here to handle the error
+            let status_code = response.status();
+            let response_text = response.text().await?;
+            println!("Request failed with status code: {}", status_code);
+            println!("Response: {}", response_text);
+            Err("Request failed".into())
+        }
+        },
     }
 }
 
@@ -153,13 +182,13 @@ pub async fn is_valid_token() -> Result<(), Box<dyn std::error::Error>> {
     let expiry_str = Entry::new("PaperFlow", "reddit_expiry")
         .map_err(|err| {
             // Handle the error, e.g., log it
-            eprintln!("Error accessing token: {}", err);
+            println!("Error accessing token: {}", err);
             err
         })?
         .get_password()
         .map_err(|err| {
             // Handle the error, e.g., log it
-            eprintln!("Error getting token password: {}", err);
+            println!("Error getting token password: {}", err);
             err
         })?;
 
@@ -167,17 +196,17 @@ pub async fn is_valid_token() -> Result<(), Box<dyn std::error::Error>> {
 
     let expiry = expiry_str.parse::<i64>().map_err(|err| {
         // Handle the error, e.g., log it
-        eprintln!("Error parsing expiry: {}", err);
+        println!("Error parsing expiry: {}", err);
         err
     })?;
-    let current_time = chrono::Utc::now().timestamp();
+    let current_time = Utc::now().timestamp();
 
     if current_time < expiry {
         println!("The token is not expired");
         Ok(()) // Token is still valid
     } else {
         println!("The token is expired");
-        get_access_token(Expire, None).await?;
+        do_token_action(Expire, None).await?;
         println!("The token has been refreshed (it hasnt)");
         Ok(()) // Refresh the token
     }
@@ -211,7 +240,7 @@ pub async fn start_reddit_login(app_handle: tauri::AppHandle) {
 
             let recieved = rx.recv().unwrap();
             // this will run after the code is fetched from the function
-            get_access_token(Initial, Some(recieved)).await;
+            let _ = do_token_action(Initial, Some(recieved)).await;
 
             server_handle.join().unwrap();
         }
@@ -274,7 +303,7 @@ fn run(server: Server, app_handle: &tauri::AppHandle, sender: Sender<String>) {
 
 fn run_loop(
     server: &Server,
-    app_handle: &tauri::AppHandle,
+    _app_handle: &tauri::AppHandle,
     sender: Sender<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let request = server.recv()?;
@@ -318,7 +347,7 @@ fn handle_callback(
     request.respond(response)?;
 
     //make the call to the server
-    sender.send(code);
+    let _ = sender.send(code);
 
     Ok(())
 }

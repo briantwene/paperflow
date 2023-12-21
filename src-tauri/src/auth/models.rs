@@ -29,7 +29,8 @@ pub struct RedditApi {
 
 pub enum TokenContext {
     Expire,
-    Initial
+    Initial,
+    Revoke
 }
 
 

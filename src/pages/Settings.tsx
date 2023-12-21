@@ -20,6 +20,12 @@ const Settings = () => {
               onClick={() => invoke("start_reddit_login")}
             />
           </div>
+          <div>
+            <Button
+              text="disconnect"
+              onClick={() => invoke("revoke_token", { provider: "reddit" })}
+            />
+          </div>
         </div>
         <div className="flex justify-between w-full">
           <div>
