@@ -17,9 +17,9 @@ const View = () => {
         <div className="flex items-center justify-between my-4">
           <h1 className="text-2xl font-medium">{image?.title}</h1>
           <div className="flex justify-end gap-4 mt-3">
-            <Button text="Collect" />
-            <Button text="Like" />
-            <Button text="Download" />
+            <Button onClick={() => console.log("collect")} text="Collect" />
+            <Button onClick={() => console.log("collect")} text="Like" />
+            <Button onClick={() => console.log("collect")} text="Download" />
           </div>
         </div>
         <div className="self-center img-container">
