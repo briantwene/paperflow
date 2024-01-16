@@ -11,9 +11,9 @@ import View from "./pages/View";
 //creating the base route
 const rootRoute = new RootRoute({
   component: () => (
-    <div className="flex h-screen font-poppins">
+    <div className="grid h-screen grid-cols-4 grid-rows-1 lg:grid-cols-5 font-poppins">
       <Navigation />
-      <div className="w-screen overflow-auto">
+      <div className="col-span-3 overflow-auto lg:col-span-4 ">
         <Outlet />
       </div>
       <TanStackRouterDevtools />
