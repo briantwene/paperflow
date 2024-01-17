@@ -2,7 +2,7 @@ import { useParams } from "@tanstack/router";
 import useView from "../hooks/useView";
 
 import InfoPanel from "../components/InfoPanel";
-import { Button } from "@/components/ui/button";
+
 
 const View = () => {
   const { id } = useParams();
@@ -14,7 +14,7 @@ const View = () => {
     return <div>{error}</div>;
   } else {
     return (
-      <div className="grid items-center grid-cols-1 gap-4 m-4 grid-rows-viewLayout lg:grid-cols-8">
+      <div className="grid grid-cols-1 gap-4 m-4 grid-rows-viewLayout lg:grid-cols-8">
         <div className="my-4 lg:col-span-8">
           <h1 className="text-3xl font-medium">{image?.title}</h1>
         </div>
