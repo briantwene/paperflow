@@ -9,15 +9,13 @@ export interface Image {
 export interface ImageView {
   url: string;
   title: string;
-  info: ImageInfo;
-}
-
-export interface ImageInfo {
   author: string;
   karma: number;
   subreddit: string;
   created: string;
 }
+
+
 
 export interface Collection {
   id: number;

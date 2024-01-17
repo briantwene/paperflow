@@ -18,10 +18,10 @@ pub struct ImageInfo {
     author: String,
     #[serde(deserialize_with = "generate_date")]
     created: String,
+    #[serde(rename(serialize = "karma"))]
     score: i32,
+    #[serde(rename(serialize = "subreddit"))]
     subreddit_name_prefixed: String,
-   
-  
 }
 
 pub fn generate_date<'de, D>(deserializer: D) -> Result<String, D::Error>

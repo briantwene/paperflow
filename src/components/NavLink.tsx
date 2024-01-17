@@ -3,8 +3,8 @@ import { enumObject } from "./enums";
 
 const NavLink = (props: enumObject) => {
   const baseStyle =
-    "flex m-4 text-lg font-medium rounded-lg cursor-pointer hover:bg-primary items-center px-4 py-2 grow ";
-  const activeStyle = `${baseStyle} cursor-pointer bg-primary text-white`;
+    "flex m-4 text-lg font-medium rounded-lg cursor-pointer hover:bg-secondary items-center px-4 py-2 grow ";
+  const activeStyle = `${baseStyle} cursor-pointer bg-secondary text-white`;
   return (
     <li>
       <Link
