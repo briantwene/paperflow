@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import Filter from "../components/Filter";
-import { Link } from "@tanstack/router";
 
 import useImages from "../hooks/useImages";
 
@@ -38,7 +38,7 @@ const Index = () => {
       </div>
     );
   }
-  
+
   // return (
   //   <div className="w-full">
   //     {/* <h1 className="m-6 text-5xl font-semibold">Discover</h1> */}

@@ -1,12 +1,12 @@
-import { RootRoute, Route, Router, Outlet } from "@tanstack/router";
+import { RootRoute, Route, Router, Outlet } from "@tanstack/react-router";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Favorite from "./pages/Favorite";
 import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
-import { TanStackRouterDevtools } from "./utils/TanStackRouterDevTools";
 import Navigation from "./components/Navigation";
 import View from "./pages/View";
+import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 //creating the base route
 const rootRoute = new RootRoute({
@@ -77,11 +77,10 @@ const routeTree = rootRoute.addChildren([
 
 const appRouter = new Router({ routeTree });
 
-declare module "@tanstack/router" {
+declare module "@tanstack/react-router" {
   interface Register {
     router: typeof appRouter;
   }
 }
-
 
 export default appRouter;
