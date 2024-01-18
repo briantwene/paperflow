@@ -1,11 +1,13 @@
-import { useParams } from "@tanstack/router";
+import { useParams } from "@tanstack/react-router";
 import useView from "../hooks/useView";
 
 import InfoPanel from "../components/InfoPanel";
 
-
 const View = () => {
-  const { id } = useParams();
+  const id = useParams({
+    from: "/view/$id",
+    select: (params) => params.id
+  });
   const { image, isLoading, error } = useView(id);
 
   if (isLoading) {
