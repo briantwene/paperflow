@@ -1,5 +1,3 @@
-import React from "react";
-
 const ConnectionSettingsTab = () => {
   return <div>ConnectionSettingsTab</div>;
 };
