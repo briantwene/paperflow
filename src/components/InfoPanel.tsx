@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api";
 import { ImageView } from "../utils/models";
 import { Button } from "./ui/button";
 import {
@@ -20,6 +21,14 @@ const InfoPanel = ({ image }: Props) => {
     </div>
   ));
 
+  const download = async () => {
+    const result = await invoke("reddit_download", {
+      url: image.url,
+      name: image.title
+    });
+    console.log("download result", result);
+  };
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -29,7 +38,7 @@ const InfoPanel = ({ image }: Props) => {
         <div className="flex-col">{infoMap}</div>
       </CardContent>
       <CardFooter>
-        <Button>Download</Button>
+        <Button onClick={download}>Download</Button>
       </CardFooter>
     </Card>
   );

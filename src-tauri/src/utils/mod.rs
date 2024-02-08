@@ -1,4 +1,3 @@
-
 use reqwest::Client;
 
 pub fn create_http() -> Client {
@@ -9,11 +8,9 @@ pub fn create_http() -> Client {
         .expect("Failed to create client");
 }
 
-
-
 pub fn generate_user_agent() -> String {
     let app_version: String = String::from("v0.1.0");
     let os_info = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
 
-    return format!("{}:PaperFlow:{} (by /u/Abalone_shot)", os_info, app_version)
+    return format!("{}:PaperFlow:{} (by /u/Abalone_shot)", os_info, app_version);
 }

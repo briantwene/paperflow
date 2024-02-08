@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import Filter from "../components/Filter";
 
 import useImages from "../hooks/useImages";
+import { useSettingsStore } from "@/lib/store";
 
 const Index = () => {
   const { images, error, isLoading } = useImages("wallpaper", "top");
@@ -38,6 +39,8 @@ const Index = () => {
       </div>
     );
   }
+
+  // return <div>Ha</div>;
 
   // return (
   //   <div className="w-full">

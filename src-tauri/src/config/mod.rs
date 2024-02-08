@@ -15,7 +15,6 @@ impl AppConfig {
         let base_url  =  "http://localhost:32463".to_string();
 
         // Load other configuration variables similarly
-
         AppConfig { server_url, base_url }
     }
 }

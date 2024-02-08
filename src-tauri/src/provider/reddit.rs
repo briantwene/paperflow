@@ -1,10 +1,16 @@
 use crate::auth::reddit::get_token;
 use crate::utils::create_http;
 use crate::{auth::reddit::is_valid_token, provider::models::ImageInfo};
+use image::io::Reader as ImageReader;
 
 use serde_json::{from_value, Value};
+use tauri::api::path;
+use tauri_plugin_store::StoreBuilder;
 
 use std::error::Error;
+use std::fs::create_dir_all;
+use std::io::Cursor;
+use std::path::Path;
 
 use super::models::Image;
 
@@ -20,7 +26,6 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, B
 
     is_valid_token().await?;
     let token = get_token().await?;
-
 
     let fetcher = create_http();
     // Make HTTP request and get the responsemood
@@ -73,4 +78,49 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     println!("{:#?}", info);
 
     Ok(info)
+}
+
+pub async fn download(url: String, name: String) -> Result<String, Box<dyn Error>> {
+
+
+    // TODO: This might be handy for getting the save path from store
+    // println!("store should have been created {:#?}", store);    
+
+    // let stores = app.state::<StoreCollection<Wry>>();
+    // let path = PathBuf::from("settings.json");
+
+    // let _ = with_store(app.handle(), stores, path, |store| {
+    //     println!("access store {:#?} ", store);
+    //     Ok(())
+    // } );
+
+
+    let path_url = Path::new(&url);
+    let save_path = path::picture_dir().unwrap().join("paperflow");
+    println!("{:?}", save_path);
+    create_dir_all(&save_path)?;
+
+    let ext = path_url.extension().unwrap().to_str().unwrap();
+
+    let fetcher = create_http();
+    let response = fetcher.get(&url).send().await?;
+    let response = response.bytes().await?;
+
+    // get the file extension
+
+    let image = ImageReader::new(Cursor::new(response))
+        .with_guessed_format()?
+        .decode()?;
+
+    let height = image.height();
+    let width = image.width();
+
+    let file_path = save_path.join(name + "." + ext);
+
+    // saving the file
+    let file_path = file_path.to_str().unwrap();
+
+    image.save(file_path)?;
+
+    Ok(format!("{}",file_path))
 }
