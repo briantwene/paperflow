@@ -1,11 +1,9 @@
-import { SettingsStore } from "./store";
 import { Store } from "tauri-plugin-store-api";
 import { create } from "zustand";
 import { z } from "zod";
 import { devtools } from "zustand/middleware";
 
 const tauriStore = new Store("settings.json");
-
 
 // original idea: https://youtu.be/CzkIGF3Z7qA
 
