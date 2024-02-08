@@ -1,10 +1,6 @@
-import { useSettingsStore } from "@/lib/store";
-import Button from "../components/common/Button";
-import { invoke } from "@tauri-apps/api/tauri";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GeneralSettingsTab from "@/components/settings/GeneralSettingsTab";
 import ConnectionSettingsTab from "@/components/settings/ConnectionSettingsTab";
-import { useTheme } from "@/hooks/useTheme";
 
 const Settings = () => {
   return (
