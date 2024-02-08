@@ -4,12 +4,15 @@ import "./index.css";
 import { RouterProvider } from "@tanstack/react-router";
 import appRouter from "./Router";
 import { ThemeProvider } from "./components/theme-provider";
+import StoreLoader from "./lib/storeLoader";
 import("preline");
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <RouterProvider router={appRouter} />
+      <StoreLoader>
+        <RouterProvider router={appRouter} />
+      </StoreLoader>
     </ThemeProvider>
   </React.StrictMode>
 );

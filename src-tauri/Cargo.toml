@@ -17,14 +17,15 @@ tauri-build = { version = "1.5.1", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.4", features = ["updater"] }
+tauri = { version = "1.5.4", features = [ "dialog-all", "updater"] }
 reqwest = {version = "0.11", features = ["json"] }
 tokio = {version = "1", features = ["full"] }
 bytes = { version = "1"}
-image = { version = "0.24.6"}
+image = "0.24.6"
 serde_with = {version = "3.2.0", features = ["chrono"] }
 chrono = {version = "0.4.26"}
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1", features = ["colored"] }
+tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 log = "^0.4"
 user_agent = "0.11"
 os_info = "3.7.0"

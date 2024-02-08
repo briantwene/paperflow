@@ -104,6 +104,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-log",
+ "tauri-plugin-store",
  "tiny_http",
  "tokio 1.35.1",
  "url",
@@ -2003,7 +2004,7 @@ dependencies = [
  "httpdate 1.0.3",
  "itoa 1.0.10",
  "pin-project-lite 0.2.13",
- "socket2 0.5.5",
+ "socket2 0.4.10",
  "tokio 1.35.1",
  "tower-service",
  "tracing",
@@ -4552,7 +4553,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-log"
 version = "0.0.0"
-source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v1#cf0090029888efc6a1f4d178cec773e6cd4c5b69"
+source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v1#38aedb45e39e93290fb2d90dc6f7674d09a1c174"
 dependencies = [
  "byte-unit",
  "fern",
@@ -4562,6 +4563,18 @@ dependencies = [
  "serde_repr",
  "tauri",
  "time 0.3.31",
+]
+
+[[package]]
+name = "tauri-plugin-store"
+version = "0.0.0"
+source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v1#38aedb45e39e93290fb2d90dc6f7674d09a1c174"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "thiserror",
 ]
 
 [[package]]
