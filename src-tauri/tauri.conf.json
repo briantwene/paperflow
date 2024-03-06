@@ -12,7 +12,15 @@
   },
   "tauri": {
     "allowlist": {
-      "all": false
+      "all": false,
+      "dialog": {
+        "all": true,
+        "ask": false,
+        "confirm": false,
+        "message": false,
+        "open": false,
+        "save": false
+      }
     },
     "bundle": {
       "active": true,
@@ -65,10 +73,11 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "minHeight": 600,
         "resizable": true,
         "title": "PaperFlow",
-        "width": 800
+        "minWidth": 800,
+        "maximizable": true
       }
     ]
   }
