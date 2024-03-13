@@ -54,9 +54,8 @@ const GeneralSettingsTab = () => {
 
   const formValues = form.watch();
 
+  // TODO: Remove this
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("saved values", values);
-
     saveSettings(values);
     // save the values in the state
   };
@@ -69,13 +68,11 @@ const GeneralSettingsTab = () => {
     });
 
     if (selectedPath) {
-      console.log("selectedPath", selectedPath);
       form.setValue("path", selectedPath as string);
     }
   };
 
   useEffect(() => {
-    console.log("formValues:", formValues);
     //TODO: could do a check to see if the theme is the same
     setTheme(formValues?.theme as Theme);
 
