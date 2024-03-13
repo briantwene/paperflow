@@ -14,3 +14,11 @@ pub fn generate_user_agent() -> String {
 
     return format!("{}:PaperFlow:{} (by /u/Abalone_shot)", os_info, app_version);
 }
+
+// swap characters that aren't allowed in filenames to '_'
+pub fn sanitize_filename(filename: &str) -> String {
+    filename.chars().map(|c| match c {
+        '<' | '>' | ':' | '\"' | '/' | '\\' | '|' | '?' | '*' => '_',
+        _ => c,
+    }).collect()
+}
