@@ -1,7 +1,9 @@
+import { invoke } from "@tauri-apps/api/tauri";
 import { Store } from "tauri-plugin-store-api";
 import { create } from "zustand";
 import { z } from "zod";
 import { devtools } from "zustand/middleware";
+import { ConnectionObject, ConnectionSettingsEnum } from "@/components/enums";
 
 const tauriStore = new Store("settings.json");
 
@@ -11,6 +13,13 @@ interface settingState {
   path: string;
   theme: string;
 }
+
+type ConnectionStatuses = { [key: string]: boolean };
+
+type ConnectionState = {
+  connections: ConnectionObject[];
+  fetchStatuses: () => Promise<void>;
+};
 
 export interface SettingsStore extends settingState {
   setDownloadPath: (path: string) => Promise<void>;
@@ -70,5 +79,24 @@ const loadSettingsStore = async () => {
     _hydrated: true
   });
 };
+
+export const useConnectionStore = create<ConnectionState>((set) => ({
+  connections: ConnectionSettingsEnum.map(({ name, src, connect }) => ({
+    name,
+    src,
+    connect,
+    active: false
+  })),
+  fetchStatuses: async () => {
+    const newStatuses: ConnectionStatuses = await invoke("auth_status");
+    console.log("statues", newStatuses);
+    set((state) => ({
+      connections: state.connections.map((connection) => ({
+        ...connection,
+        active: newStatuses[connection.name.toLowerCase()] || false
+      }))
+    }));
+  }
+}));
 
 loadSettingsStore();
