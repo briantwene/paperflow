@@ -54,3 +54,5 @@ const InfoPanel = ({ image }: Props) => {
 };
 
 export default InfoPanel;
+
+
