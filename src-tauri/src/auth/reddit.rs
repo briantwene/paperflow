@@ -351,4 +351,3 @@ fn handle_callback(
 
     Ok(())
 }
-

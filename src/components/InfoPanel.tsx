@@ -23,10 +23,8 @@ const InfoPanel = ({ image }: Props) => {
 
   const download = async () => {
     const result = await invoke("reddit_download", {
-      info: {
-        url: image.url,
-        name: image.title
-      }
+      url: image.url,
+      name: image.title
     });
     console.log("download result", result);
   };
@@ -54,5 +52,3 @@ const InfoPanel = ({ image }: Props) => {
 };
 
 export default InfoPanel;
-
-
