@@ -11,9 +11,6 @@ pub struct Image {
     pub author: String,
 }
 
-
-
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ImageInfo {
     url: String,
@@ -38,11 +35,4 @@ where
 
 
     Ok(created_utc.to_rfc2822())
-}
-
-
-#[derive(Deserialize, Debug)]
-pub struct DownloadInfo {
-    pub url: String,
-    pub name: String,
 }
