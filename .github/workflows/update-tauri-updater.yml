@@ -35,55 +35,26 @@ jobs:
             });
 
             const { name, body, published_at, assets } = data;
-
-            const linuxAssetUrl = assets[1].browser_download_url;
-            const linuxSigObj = await github.request(assets[2].browser_download_url);
-            const linuxSignature = new TextDecoder().decode(linuxSigObj.data);
-
-            const macAssetUrl = assets[4].browser_download_url;
-            const macSigObj = await github.request(assets[5].browser_download_url);
-            const macSignature = new TextDecoder().decode(macSigObj.data);
-
-            const winAssetUrl = assets[8].browser_download_url;
-            const winSigObj = await github.request(assets[9].browser_download_url);
-            const winSignature = new TextDecoder().decode(winSigObj.data);
-            
+     
+            const latest_url = assets[0].browser_download_url;
+            const latest_data = await github.request(latest_url).then( ({data}) => {
+                return JSON.parse(new TextDecoder().decode(data))
+            });
+     
+    
             const notes = body.replace(/ *\([^)]*\)|#|\) */g, '');
-
-            const newGistContent = JSON.stringify({
-              version: name,
-              notes,
-              pub_date: published_at,
-              platforms: { 
-                "darwin-x86_64": {
-                  signature: macSignature,
-                  url: macAssetUrl,
-                },
-                "linux-x86_64": {
-                  signature: linuxSignature,
-                  url: linuxAssetUrl,
-                },
-                "windows-x86_64": {
-                  signature: winSignature,
-                  url: winAssetUrl,
-                }
-              }
-            }, null, 2);
-            
-            let retries = 5;
-            while (retries--) {
-              try {
+            latest_data.notes = notes;
+      
+        
+            try {
                 await github.rest.gists.update({
-                  gist_id: process.env.updater_gist_id,
-                  files: {
-                    "updater.json": {
-                      content: newGistContent
+                    gist_id: process.env.updater_gist_id,
+                    files: {
+                        "updater.json": {
+                            content: JSON.stringify(latest_data, null, 2)
+                        }
                     }
-                  }
                 });
-                break; // If the request was successful, break the loop
-              } catch (error) {
-                if (!retries) throw error; // If this was the last retry, throw the error
-                await new Promise(resolve => setTimeout(resolve, (5 - retries) * 1000)); // Wait for a period before retrying
-              }
+            } catch (error) {
+                console.error('Failed to update gist:', error);
             }
