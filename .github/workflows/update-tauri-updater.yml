@@ -33,6 +33,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
+
             const { name, body, published_at, assets } = data;
 
             const linuxAssetUrl = assets[1].browser_download_url;
@@ -69,11 +70,20 @@ jobs:
               }
             }, null, 2);
             
-            await github.rest.gists.update({
-              gist_id: process.env.updater_gist_id,
-              files: {
-                "updater.json": {
-                  content: newGistContent
-                }
+            let retries = 5;
+            while (retries--) {
+              try {
+                await github.rest.gists.update({
+                  gist_id: process.env.updater_gist_id,
+                  files: {
+                    "updater.json": {
+                      content: newGistContent
+                    }
+                  }
+                });
+                break; // If the request was successful, break the loop
+              } catch (error) {
+                if (!retries) throw error; // If this was the last retry, throw the error
+                await new Promise(resolve => setTimeout(resolve, (5 - retries) * 1000)); // Wait for a period before retrying
               }
-            });
+            }

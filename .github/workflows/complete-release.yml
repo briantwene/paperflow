@@ -10,7 +10,7 @@ jobs:
     steps:
        - name: Get Latest Release id
          id: get_release_id
-         uses: actions/github-script@v6
+         uses: actions/github-script@v7
          with:
             script: |
                   const {data: releases} = await github.rest.repos.listReleases({
