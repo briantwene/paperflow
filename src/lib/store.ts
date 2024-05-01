@@ -19,6 +19,7 @@ type ConnectionStatuses = { [key: string]: boolean };
 type ConnectionState = {
   connections: ConnectionObject[];
   fetchStatuses: () => Promise<void>;
+  disconnect: (provider: string) => Promise<void>;
 };
 
 export interface SettingsStore extends settingState {
@@ -80,7 +81,7 @@ const loadSettingsStore = async () => {
   });
 };
 
-export const useConnectionStore = create<ConnectionState>((set) => ({
+export const useConnectionStore = create<ConnectionState>((set, get) => ({
   connections: ConnectionSettingsEnum.map(({ name, src, connect }) => ({
     name,
     src,
@@ -96,6 +97,21 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
         active: newStatuses[connection.name.toLowerCase()] || false
       }))
     }));
+  },
+  disconnect: async (provider: string) => {
+    // call the disconnect function
+    const revokeStatus: { message: string; status: string } = await invoke(
+      "disconnect",
+      { provider }
+    );
+    console.log("revoke", revokeStatus);
+
+    if (revokeStatus.status == "error") {
+      console.log("failed disconnect");
+    } else {
+      // then fetch the state again
+      await get().fetchStatuses();
+    }
   }
 }));
 
