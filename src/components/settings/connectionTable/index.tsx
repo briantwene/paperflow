@@ -1,4 +1,3 @@
-import { ConnectionObject } from "@/components/enums";
 import {
   Table,
   TableBody,

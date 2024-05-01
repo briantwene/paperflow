@@ -3,16 +3,12 @@ import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
 import ConnectionCard from "./ConnectionCard";
-import { ConnectionSettingsEnum } from "../enums";
 import { useConnectionStore } from "@/lib/store";
 import { useEffect } from "react";
-import { connect } from "http2";
 import { ConnectionsTable } from "./connectionTable";
 import { useColumns } from "./connectionTable/columns";
 
