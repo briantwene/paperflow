@@ -34,11 +34,11 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
           - name: checkout repo
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
 
 
           - name: Node setup
-            uses: actions/setup-node@v3 
+            uses: actions/setup-node@v4 
             with:
               node-version-file: ".nvmrc"
               cache: "npm"
@@ -70,7 +70,7 @@ jobs:
               releaseId:  ${{ needs.get_release.outputs.release_id }}
 
           - name: Publish latest release
-            uses: actions/github-script@v6
+            uses: actions/github-script@v7
             env:
               release_id:  ${{ needs.get_release.outputs.release_id }}
             with:
@@ -100,7 +100,7 @@ jobs:
       name: Merge main -> develop
       runs-on: ubuntu-latest
       steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
           with:
             fetch-depth: 0
             ref: main
