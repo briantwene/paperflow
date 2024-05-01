@@ -14,6 +14,7 @@ use tauri_plugin_store::{StoreBuilder, StoreCollection};
 
 
 use crate::auth::reddit::start_reddit_login;
+use auth::disconnect;
 use auth::auth_status::get_auth_status;
 use serde_json::Value as JsonValue;
 
@@ -32,7 +33,7 @@ fn main() {
             view_img,
             start_reddit_login,
             auth_status,
-            revoke_token,
+           disconnect,
             reddit_download
         ])
         .plugin(
@@ -94,23 +95,6 @@ fn auth_status() -> Value {
     result
 }
 
-#[tauri::command]
-async fn revoke_token(provider: String) -> Value {
-    match provider.as_str() {
-        "reddit" => revoke_reddit_token().await,
-        _ => invalid_provider_response(),
-    }
-}
-
-async fn revoke_reddit_token() -> Value {
-    let _result = auth::reddit::do_token_action(auth::models::TokenContext::Revoke, None)
-        .await
-        .unwrap();
-    return serde_json::json!({
-        "status": "success",
-        "message": "Successfully logged out of Reddit"
-    });
-}
 
 #[tauri::command]
 async fn reddit_download(app_handle: AppHandle, state: tauri::State<'_, StoreCollection<Wry>>, info: DownloadInfo) -> Result<JsonValue, String> {
@@ -119,9 +103,3 @@ async fn reddit_download(app_handle: AppHandle, state: tauri::State<'_, StoreCol
     return Ok(serde_json::json!({ "status": result }));
 }
 
-fn invalid_provider_response() -> JsonValue {
-    serde_json::json!({
-        "status": "error",
-        "message": "Invalid provider"
-    })
-}

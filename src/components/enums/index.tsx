@@ -1,10 +1,4 @@
-import {
-  HiOutlineCog,
-  HiOutlineHeart,
-  HiOutlineHome,
-  HiOutlineMagnifyingGlass,
-  HiOutlineRectangleGroup
-} from "react-icons/hi2";
+import { HiOutlineCog, HiOutlineHome } from "react-icons/hi2";
 import { ReactNode } from "react";
 
 import redditImg from "../../assets/reddit.png";
@@ -22,6 +16,7 @@ export type ConnectionObject = {
   active: boolean;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const navEnum: enumObject[] = [
   {
     title: "Discover",

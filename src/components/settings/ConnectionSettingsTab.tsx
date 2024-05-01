@@ -3,18 +3,14 @@ import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
 import ConnectionCard from "./ConnectionCard";
-import { ConnectionSettingsEnum } from "../enums";
 import { useConnectionStore } from "@/lib/store";
 import { useEffect } from "react";
-import { connect } from "http2";
 import { ConnectionsTable } from "./connectionTable";
-import { columns } from "./connectionTable/columns";
+import { useColumns } from "./connectionTable/columns";
 
 const ConnectionSettingsTab = () => {
   const fetchStatuses = useConnectionStore((state) => state.fetchStatuses);
@@ -25,6 +21,7 @@ const ConnectionSettingsTab = () => {
   }, [fetchStatuses]);
 
   console.log("SWt", connections);
+  const columns = useColumns();
 
   return (
     <div className="flex flex-col gap-4">
