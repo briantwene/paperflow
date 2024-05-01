@@ -1,18 +1,20 @@
 use crate::auth::reddit::get_token;
-use crate::utils::create_http;
+use crate::utils::{create_http, sanitize_filename};
 use crate::{auth::reddit::is_valid_token, provider::models::ImageInfo};
 use image::io::Reader as ImageReader;
 
 use serde_json::{from_value, Value};
-use tauri::api::path;
-use tauri_plugin_store::StoreBuilder;
+use tauri::api::path::{self, picture_dir};
+use tauri::{AppHandle, Wry};
+use tauri_plugin_store::{with_store, StoreBuilder, StoreCollection};
 
+use core::panic;
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::io::Cursor;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use super::models::Image;
+use super::models::{DownloadInfo, Image};
 
 const HOST_URL: &str = "https://oauth.reddit.com";
 const FETCH_LIMIT: i32 = 75;
@@ -80,47 +82,67 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     Ok(info)
 }
 
-pub async fn download(url: String, name: String) -> Result<String, Box<dyn Error>> {
 
+pub async fn download(
+    info: DownloadInfo,
+    app_handle: AppHandle,
+    state: tauri::State<'_, StoreCollection<Wry>>,
+) -> Result<String, Box<dyn Error>> {
 
-    // TODO: This might be handy for getting the save path from store
-    // println!("store should have been created {:#?}", store);    
+    let path = PathBuf::from("settings.json");
 
-    // let stores = app.state::<StoreCollection<Wry>>();
-    // let path = PathBuf::from("settings.json");
+    // get the url from the store
+    let save_path_result = with_store(app_handle, state, path, |store| {
+        let path: String = match store.get("path") {
+            Some(path) => {
+                print!("he {}", path.to_string());
+                let string_path = path.as_str().expect("path is not a string").to_string();
 
-    // let _ = with_store(app.handle(), stores, path, |store| {
-    //     println!("access store {:#?} ", store);
-    //     Ok(())
-    // } );
+                string_path
+            }
+            None => panic!("this is not in the store"),
+        };
+        Ok(path)
+    });
 
+    println!("work");
+    let save_path = match save_path_result {
+        Ok(path) => {
+            let path_result = path.to_string();
 
-    let path_url = Path::new(&url);
-    let save_path = path::picture_dir().unwrap().join("paperflow");
-    println!("{:?}", save_path);
+            Ok(path_result)
+        }
+        Err(error) => Err(error),
+    }
+    .unwrap();
+
+    let path_url = Path::new(&info.url);
+
+    let save_path = PathBuf::from(&save_path);
+
     create_dir_all(&save_path)?;
 
     let ext = path_url.extension().unwrap().to_str().unwrap();
 
+    // Create the client and download the image
     let fetcher = create_http();
-    let response = fetcher.get(&url).send().await?;
+    let response = fetcher.get(&info.url).send().await?;
     let response = response.bytes().await?;
 
-    // get the file extension
-
+    // convert the bytes to an image
     let image = ImageReader::new(Cursor::new(response))
         .with_guessed_format()?
         .decode()?;
 
-    let height = image.height();
-    let width = image.width();
+        let name = sanitize_filename(&info.name);
+        let file_path = save_path.join(format!("{}.{}", &name, ext));
 
-    let file_path = save_path.join(name + "." + ext);
 
-    // saving the file
+    // save the file
     let file_path = file_path.to_str().unwrap();
+
 
     image.save(file_path)?;
 
-    Ok(format!("{}",file_path))
+    Ok(format!("{}", "Successful"))
 }

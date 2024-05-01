@@ -4,17 +4,19 @@
 use std::collections::HashMap;
 
 use provider::{
-    models::{Image, ImageInfo},
+    models::{DownloadInfo, Image, ImageInfo},
     reddit::download,
 };
 use serde_json::Value;
-use tauri::api::path;
+use tauri::{api::path, AppHandle, Manager, Wry};
 use tauri_plugin_log::LogTarget;
-use tauri_plugin_store::StoreBuilder;
+use tauri_plugin_store::{StoreBuilder, StoreCollection};
 
 
 use crate::auth::reddit::start_reddit_login;
+use auth::disconnect;
 use auth::auth_status::get_auth_status;
+use serde_json::Value as JsonValue;
 
 mod auth;
 mod organiser;
@@ -31,7 +33,7 @@ fn main() {
             view_img,
             start_reddit_login,
             auth_status,
-            revoke_token,
+           disconnect,
             reddit_download
         ])
         .plugin(
@@ -41,7 +43,6 @@ fn main() {
         )
         .setup(|app| {
             let mut defaults = HashMap::new();
-
             defaults.insert(
                 "path".to_string(),
                 path::picture_dir()
@@ -57,6 +58,8 @@ fn main() {
             let mut store = StoreBuilder::new(app.handle(), "settings.json".parse().unwrap())
                 .defaults(defaults)
                 .build();
+
+            store.reset()?;
 
             app.handle()
                 .plugin(tauri_plugin_store::Builder::default().store(store).build());
@@ -92,34 +95,11 @@ fn auth_status() -> Value {
     result
 }
 
-#[tauri::command]
-async fn revoke_token(provider: String) -> Value {
-    match provider.as_str() {
-        "reddit" => revoke_reddit_token().await,
-        _ => invalid_provider_response(),
-    }
-}
-
-async fn revoke_reddit_token() -> Value {
-    let _result = auth::reddit::do_token_action(auth::models::TokenContext::Revoke, None)
-        .await
-        .unwrap();
-    return serde_json::json!({
-        "status": "success",
-        "message": "Successfully logged out of Reddit"
-    });
-}
 
 #[tauri::command]
-async fn reddit_download(url: String, name: String) -> Value {
-    let result = download(url, name).await.unwrap();
+async fn reddit_download(app_handle: AppHandle, state: tauri::State<'_, StoreCollection<Wry>>, info: DownloadInfo) -> Result<JsonValue, String> {
+    let result = download(info, app_handle, state).await.unwrap();
     println!("{}", result);
-    return serde_json::json!({ "status": result });
+    return Ok(serde_json::json!({ "status": result }));
 }
 
-fn invalid_provider_response() -> Value {
-    serde_json::json!({
-        "status": "error",
-        "message": "Invalid provider"
-    })
-}
