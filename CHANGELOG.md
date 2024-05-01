@@ -1,5 +1,13 @@
 # paperflow
 
+## 0.1.1
+
+### Patch Changes
+
+- 5e36751: Connection Settings Redesign Implemented
+- 69852c0: refactored disconnecting from provider in Connection Settings Redesign
+- 54191b6: fixed issue where images wouldn't download to the path specified in the settings
+
 ## 0.1.0
 
 ### Minor Changes
