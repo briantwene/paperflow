@@ -14,16 +14,12 @@ const Index = () => {
   } else {
     return (
       <div className="w-full px-6">
-        <div className="flex items-center h-48">
-          <h1 className="text-5xl font-semibold">Discover</h1>
+        <div className="flex flex-col justify-center h-48">
+          <h1 className="mb-4 text-5xl font-semibold">Discover</h1>
+          <h2 className="text-2xl font-light text-gray-400">
+            Wallpapers from Reddit's r/wallpaper
+          </h2>
         </div>
-        <div className="">
-          <h1 className="flex items-center h-16 text-2xl font-semibold">
-            Filters
-          </h1>
-          <Filter />
-        </div>
-
         <div className="gap-4 mb-6 columns-1 sm:columns-2 lg:columns-3 ">
           {images?.map((image) => (
             <Link
