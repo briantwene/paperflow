@@ -16,7 +16,7 @@ const rootRoute = new RootRoute({
       <div className="col-span-3 overflow-auto lg:col-span-4 ">
         <Outlet />
       </div>
-      <TanStackRouterDevtools />
+      {import.meta.env.MODE !== "production" && <TanStackRouterDevtools />}
     </div>
   )
 });
