@@ -1,5 +1,11 @@
 # paperflow
 
+## 0.1.2
+
+### Patch Changes
+
+- 3075082: Removed router devtools, Removed non-functional filters
+
 ## 0.1.1
 
 ### Patch Changes
