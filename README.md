@@ -1,16 +1,11 @@
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/briantwene/paperflow/main/icons/Base%20logo%20with%20background.svg"/>
+    <img src="icons/Base%20logo%20with%20background.svg" alt="paperflow logo"/>
 </p>
-
-
-
-
 
 **A Cross Platform Desktop app made to discover and download beautiful wallpapers sourced from Reddit.**
 
 Currently in development in the [develop](https://github.com/briantwene/paperflow/tree/develop) branch 🛠️
-
 
 ## Features ✨
 
@@ -19,15 +14,26 @@ Currently in development in the [develop](https://github.com/briantwene/paperflo
 - Explore a collection of stunning wallpapers from Reddit.
 - Download and set high-quality wallpapers to personalize your desktop
 - Cross platform
+
 ## Screenshots 📷
 
-Coming soon....
-
+![Home Screen](screenshots/screenshot_1.png)
+![Download Screen](screenshots/screenshot_2.png)
+![Settings Screen](screenshots/screenshot_3.png)
+![Connections Screen](screenshots/screenshot_4.png)
 
 ## Installation ⏬
 
-Coming soon...
-    
+You can download the latest version of the app from the [releases page](https://github.com/briantwene/paperflow/releases) of this repository.
+
+After navigating to the releases page, select the latest release and download the appropriate file for your operating system:
+
+- For Windows, download the `.exe` file.
+- For Mac, download the `.dmg` file.
+- For Linux, download the `.AppImage` file.
+
+After downloading the executable, you can install the app by double-clicking on the downloaded file and following the on-screen instructions.
+
 ## Roadmap 🛣️
 
 - [ ] Add more Desktop wallpaper subreddits
