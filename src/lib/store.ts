@@ -1,19 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Store } from "@tauri-apps/plugin-store";
+import { createStore } from "@tauri-apps/plugin-store";
 import { create } from "zustand";
 import { z } from "zod";
 import { devtools } from "zustand/middleware";
 import { ConnectionObject, ConnectionSettingsEnum } from "@/components/enums";
 
-// Initialize store using v2 API - this returns a Promise
-let tauriStore: Store | null = null;
-
-async function getStore(): Promise<Store> {
-  if (!tauriStore) {
-    tauriStore = await Store.load("settings.json");
-  }
-  return tauriStore;
-}
+// Helper function to get the store instance
+const getStore = () => createStore("settings.json", { autoSave: true });
 
 // original idea: https://youtu.be/CzkIGF3Z7qA
 

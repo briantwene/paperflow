@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "changeset": "changeset",
+    "changeset:tag": "changeset tag"
   },
   "dependencies": {
     "@changesets/cli": "^2.26.2",
