@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "../ui/select";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useTheme } from "@/hooks/useTheme";
 import { Theme } from "../theme-provider";
 

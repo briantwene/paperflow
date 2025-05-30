@@ -8,7 +8,7 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { ConnectionObject } from "../enums";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { Check } from "lucide-react";
 
 const ConnectionCard = ({ name, src, connect, active }: ConnectionObject) => {
