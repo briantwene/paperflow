@@ -1,12 +1,10 @@
 use crate::auth::reddit::get_token;
 use crate::utils::{create_http, sanitize_filename};
 use crate::{auth::reddit::is_valid_token, provider::models::ImageInfo};
-use image::io::Reader as ImageReader;
-
+use image::ImageReader;
 use serde_json::{from_value, Value};
-use tauri::api::path::{self, picture_dir};
-use tauri::{AppHandle, Wry};
-use tauri_plugin_store::{with_store, StoreBuilder, StoreCollection};
+use tauri::AppHandle;
+use tauri_plugin_store::StoreExt;
 
 use core::panic;
 use std::error::Error;
@@ -86,38 +84,13 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
 pub async fn download(
     info: DownloadInfo,
     app_handle: AppHandle,
-    state: tauri::State<'_, StoreCollection<Wry>>,
-) -> Result<String, Box<dyn Error>> {
-
-    let path = PathBuf::from("settings.json");
-
-    // get the url from the store
-    let save_path_result = with_store(app_handle, state, path, |store| {
-        let path: String = match store.get("path") {
-            Some(path) => {
-                print!("he {}", path.to_string());
-                let string_path = path.as_str().expect("path is not a string").to_string();
-
-                string_path
-            }
-            None => panic!("this is not in the store"),
-        };
-        Ok(path)
-    });
-
-    println!("work");
-    let save_path = match save_path_result {
-        Ok(path) => {
-            let path_result = path.to_string();
-
-            Ok(path_result)
-        }
-        Err(error) => Err(error),
-    }
-    .unwrap();
+) -> Result<String, Box<dyn Error>> {    // Get the save path from the store using new v2 API
+    let store = app_handle.store("settings.json")?;
+    let save_path = store.get("path")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| "paperflow".to_string());
 
     let path_url = Path::new(&info.url);
-
     let save_path = PathBuf::from(&save_path);
 
     create_dir_all(&save_path)?;

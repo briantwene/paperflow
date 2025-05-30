@@ -256,9 +256,11 @@ async fn open_login_window(app_handle: &tauri::AppHandle) -> Result<(), String> 
     let redirect_url = format!("http://localhost:32463/callback");
     let url = format!("https://www.reddit.com/api/v1/authorize?client_id={client}&response_type=code&state=yooo&redirect_uri={redirect_url}&duration=permanent&scope=identity,save,read");
 
-    let window_url = tauri::WindowUrl::External(url.parse().unwrap());
+    // In Tauri v2, we use WebviewUrl instead of WindowUrl
+    let webview_url = tauri::WebviewUrl::External(url.parse().unwrap());
 
-    let some_window = tauri::WindowBuilder::new(app_handle, "random", window_url)
+    // In Tauri v2, we use WebviewWindowBuilder instead of WindowBuilder
+    let some_window = tauri::WebviewWindowBuilder::new(app_handle, "random", webview_url)
         .fullscreen(false)
         .resizable(true)
         .title("Settings")

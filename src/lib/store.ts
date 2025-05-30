@@ -1,11 +1,19 @@
-import { invoke } from "@tauri-apps/api/tauri";
-import { Store } from "tauri-plugin-store-api";
+import { invoke } from "@tauri-apps/api/core";
+import { Store } from "@tauri-apps/plugin-store";
 import { create } from "zustand";
 import { z } from "zod";
 import { devtools } from "zustand/middleware";
 import { ConnectionObject, ConnectionSettingsEnum } from "@/components/enums";
 
-const tauriStore = new Store("settings.json");
+// Initialize store using v2 API - this returns a Promise
+let tauriStore: Store | null = null;
+
+async function getStore(): Promise<Store> {
+  if (!tauriStore) {
+    tauriStore = await Store.load("settings.json");
+  }
+  return tauriStore;
+}
 
 // original idea: https://youtu.be/CzkIGF3Z7qA
 
@@ -47,19 +55,20 @@ export const saveSettings = async (newState: settingState) => {
   //then save the file
   await useSettingsStore.setState(newState);
 
+  const store = await getStore();
   const stateKeys = Object.keys(newState);
 
   for (const key of stateKeys) {
-    await tauriStore.set(key, newState[key as keyof settingState]);
+    await store.set(key, newState[key as keyof settingState]);
   }
 
-  await tauriStore.save();
+  await store.save();
 };
 
 const loadSettingsStore = async () => {
-  await tauriStore.load();
-  const path = await tauriStore.get("path");
-  const theme = await tauriStore.get("theme");
+  const store = await getStore();
+  const path = await store.get("path");
+  const theme = await store.get("theme");
 
   const parsedPath = z.string().safeParse(path);
   const parsedTheme = z.string().safeParse(theme);
