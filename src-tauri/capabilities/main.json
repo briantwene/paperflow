@@ -1,7 +1,9 @@
 {
   "identifier": "main-capability",
   "description": "Capability for the main application",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "dialog:default",
@@ -18,6 +20,7 @@
     "store:allow-values",
     "store:allow-entries",
     "store:allow-length",
-    "store:allow-has"
+    "store:allow-has",
+    "store:default"
   ]
 }
