@@ -20,5 +20,5 @@ jobs:
 
 
             - name: lint and build test
-              run: yarn install --frozen-lockfile && yarn lint && yarn run build
+              run: npm ci && npm run lint && npm run build
             
