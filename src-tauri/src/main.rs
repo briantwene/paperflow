@@ -28,14 +28,18 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![
+        .plugin(tauri_plugin_updater::Builder::new().build())        .invoke_handler(tauri::generate_handler![
             fetch,
             view_img,
             start_reddit_login,
             auth_status,
             disconnect,
-            reddit_download
+            reddit_download,            // New improved auth commands
+            auth::start_reddit_auth_v2,
+            auth::get_reddit_token_v2,
+            auth::revoke_reddit_auth_v2,
+            auth::check_reddit_auth_status_v2,
+            auth::demo_auth_flow_v2
         ])
         .setup(|app| {
             let mut defaults = HashMap::new();
