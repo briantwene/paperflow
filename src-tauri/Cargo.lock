@@ -83,6 +83,7 @@ checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 name = "app"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "bytes 1.10.1",
  "chrono",
  "dotenv",
@@ -103,6 +104,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-store",
  "tauri-plugin-updater",
+ "thiserror 1.0.69",
  "tiny_http",
  "tokio 1.45.1",
  "url",

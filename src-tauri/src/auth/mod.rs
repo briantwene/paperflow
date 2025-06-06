@@ -5,6 +5,15 @@ use self::reddit::do_token_action;
 pub(crate) mod reddit;
 pub(crate) mod models;
 pub(crate) mod auth_status;
+pub(crate) mod errors;
+pub(crate) mod config;
+pub(crate) mod storage;
+pub(crate) mod http_client;
+pub(crate) mod provider;
+pub(crate) mod reddit_provider;
+pub(crate) mod reddit_auth;
+pub(crate) mod oauth_session;
+pub(crate) mod tests;
 
 
 #[tauri::command]
@@ -30,4 +39,74 @@ fn invalid_provider_response() -> Value {
         "status": "error",
         "message": "Invalid provider"
     })
+}
+
+// New improved commands using the refactored architecture
+#[tauri::command]
+pub async fn start_reddit_auth_v2(app_handle: tauri::AppHandle) -> Result<String, String> {
+    use crate::auth::{reddit_auth::RedditAuth, oauth_session::OAuthSession};
+    
+    let auth = RedditAuth::new();
+    
+    // Get auth URL
+    let auth_url = auth.initiate_login().await
+        .map_err(|e| format!("Failed to initiate login: {}", e))?;
+    
+    // Start OAuth session
+    let oauth_session = OAuthSession::new(app_handle, auth_url).await
+        .map_err(|e| format!("Failed to create OAuth session: {}", e))?;
+    
+    // Wait for callback
+    let auth_code = oauth_session.wait_for_callback().await
+        .map_err(|e| format!("OAuth callback failed: {}", e))?;
+    
+    // Complete authentication
+    auth.complete_auth(auth_code).await
+        .map_err(|e| format!("Failed to complete authentication: {}", e))?;
+    
+    Ok("Authentication successful".to_string())
+}
+
+#[tauri::command]
+pub async fn get_reddit_token_v2() -> Result<String, String> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    auth.ensure_valid_token().await
+        .map_err(|e| format!("Failed to get valid token: {}", e))
+}
+
+// Internal function for provider usage - not exposed to frontend
+pub async fn get_reddit_token_for_provider() -> Result<String, crate::auth::errors::AuthError> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    auth.ensure_valid_token().await
+}
+
+#[tauri::command]
+pub async fn revoke_reddit_auth_v2() -> Result<String, String> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    auth.revoke_auth().await
+        .map_err(|e| format!("Failed to revoke authentication: {}", e))?;
+    
+    Ok("Authentication revoked successfully".to_string())
+}
+
+#[tauri::command]
+pub async fn check_reddit_auth_status_v2() -> Result<bool, String> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    Ok(auth.is_authenticated().await)
+}
+
+#[tauri::command]
+pub async fn demo_auth_flow_v2() -> Result<String, String> {
+    use crate::auth::tests;
+    
+    tests::demonstrate_auth_flow().await;
+    Ok("Demo completed - check console output".to_string())
 }

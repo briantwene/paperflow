@@ -354,3 +354,33 @@ fn handle_callback(
     Ok(())
 }
 
+// =============================================================================
+// MIGRATION EXAMPLE: Using the new improved Reddit auth system
+// =============================================================================
+
+// Example of how to use the new Reddit auth system:
+pub async fn example_usage() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    
+    // Check if user is already authenticated
+    if auth.is_authenticated().await {
+        println!("User is already authenticated");
+        
+        // Get a valid token (automatically refreshes if expired)
+        match auth.ensure_valid_token().await {
+            Ok(token) => println!("Got valid token: {}", &token[..10]), // Only show first 10 chars
+            Err(e) => println!("Failed to get token: {}", e),
+        }
+    } else {
+        println!("User needs to authenticate");
+        // You would call start_reddit_auth_v2 from the frontend
+    }
+    
+    Ok(())
+}
+
+// Legacy function - kept for backward compatibility
+// TODO: Remove once frontend is updated to use v2 commands
+
