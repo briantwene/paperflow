@@ -1,6 +1,6 @@
-use crate::auth::reddit::get_token;
+use crate::auth::get_reddit_token_for_provider;
 use crate::utils::{create_http, sanitize_filename};
-use crate::{auth::reddit::is_valid_token, provider::models::ImageInfo};
+use crate::provider::models::ImageInfo;
 use image::ImageReader;
 use serde_json::{from_value, Value};
 use tauri::AppHandle;
@@ -24,11 +24,12 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, B
         HOST_URL, subreddit, FETCH_LIMIT, sort
     );
 
-    is_valid_token().await?;
-    let token = get_token().await?;
+    // Use the new v2 auth system to get a valid token
+    let token = get_reddit_token_for_provider().await
+        .map_err(|e| format!("Authentication failed: {}", e))?;
 
     let fetcher = create_http();
-    // Make HTTP request and get the responsemood
+    // Make HTTP request and get the response
     let response = fetcher.get(url).bearer_auth(token).send().await?;
     let response = response.json::<Value>().await?;
 

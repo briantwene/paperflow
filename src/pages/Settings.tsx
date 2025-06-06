@@ -31,16 +31,14 @@ const Settings = () => {
             <div className="">Reddit</div>
             <div>Status</div>
           </div>
-          <div>
-            <Button
+          <div>            <Button
               text="connect"
-              onClick={() => invoke("start_reddit_login")}
+              onClick={() => invoke("start_reddit_auth_v2")}
             />
           </div>
-          <div>
-            <Button
+          <div>            <Button
               text="disconnect"
-              onClick={() => invoke("revoke_token", { provider: "reddit" })}
+              onClick={() => invoke("revoke_reddit_auth_v2")}
             />
           </div>
         </div>
@@ -49,10 +47,9 @@ const Settings = () => {
             <div className="">Check auth status</div>
             <div>Status</div>
           </div>
-          <div>
-            <Button
-              text="connect"
-              onClick={() => invoke("auth_status").then(console.log)}
+          <div>            <Button
+              text="check status"
+              onClick={() => invoke("check_reddit_auth_status_v2").then(console.log)}
             />
           </div>
         </div>

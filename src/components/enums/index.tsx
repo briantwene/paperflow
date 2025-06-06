@@ -49,7 +49,7 @@ export const ConnectionSettingsEnum: ConnectionObject[] = [
   {
     name: "Reddit",
     src: redditImg,
-    connect: "start_reddit_login",
+    connect: "start_reddit_auth_v2",
     active: false
   }
 ];

@@ -91,27 +91,49 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     active: false
   })),
   fetchStatuses: async () => {
-    const newStatuses: ConnectionStatuses = await invoke("auth_status");
-    console.log("statues", newStatuses);
-    set((state) => ({
-      connections: state.connections.map((connection) => ({
-        ...connection,
-        active: newStatuses[connection.name.toLowerCase()] || false
-      }))
-    }));
+    try {
+      // Use the new v2 command that returns a simple boolean
+      const isRedditAuthenticated: boolean = await invoke(
+        "check_reddit_auth_status_v2"
+      );
+
+      const newStatuses: ConnectionStatuses = {
+        reddit: isRedditAuthenticated
+      };
+
+      console.log("statuses", newStatuses);
+      set((state) => ({
+        connections: state.connections.map((connection) => ({
+          ...connection,
+          active: newStatuses[connection.name.toLowerCase()] || false
+        }))
+      }));
+    } catch (error) {
+      console.error("Failed to fetch auth statuses:", error);
+      // Set all connections as inactive on error
+      set((state) => ({
+        connections: state.connections.map((connection) => ({
+          ...connection,
+          active: false
+        }))
+      }));
+    }
   },
   disconnect: async (provider: string) => {
-    // call the disconnect function
-    const revokeStatus: { message: string; status: string } = await invoke(
-      "disconnect",
-      { provider }
-    );
-    console.log("revoke", revokeStatus);
+    try {
+      if (provider.toLowerCase() === "reddit") {
+        // Use the new v2 revoke command
+        const result: string = await invoke("revoke_reddit_auth_v2");
+        console.log("revoke result:", result);
 
-    if (revokeStatus.status == "error") {
-      console.log("failed disconnect");
-    } else {
-      // then fetch the state again
+        // Refresh the connection statuses
+        await get().fetchStatuses();
+      } else {
+        console.error("Unsupported provider:", provider);
+      }
+    } catch (error) {
+      console.error("Failed to disconnect from", provider, ":", error);
+      // Still refresh statuses to reflect current state
       await get().fetchStatuses();
     }
   }

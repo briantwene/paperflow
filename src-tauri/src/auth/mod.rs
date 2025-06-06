@@ -76,6 +76,14 @@ pub async fn get_reddit_token_v2() -> Result<String, String> {
         .map_err(|e| format!("Failed to get valid token: {}", e))
 }
 
+// Internal function for provider usage - not exposed to frontend
+pub async fn get_reddit_token_for_provider() -> Result<String, crate::auth::errors::AuthError> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    auth.ensure_valid_token().await
+}
+
 #[tauri::command]
 pub async fn revoke_reddit_auth_v2() -> Result<String, String> {
     use crate::auth::reddit_auth::RedditAuth;
