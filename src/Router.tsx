@@ -1,29 +1,29 @@
 import {
   createRootRoute,
   createRoute,
-  createRouter,
-  Outlet
+  createRouter
 } from "@tanstack/react-router";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Favorite from "./pages/Favorite";
 import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
-import Navigation from "./components/Navigation";
 import View from "./pages/View";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { MainLayout } from "./components/layout/MainLayout";
 
 //creating the base route
 const rootRoute = createRootRoute({
-  component: () => (
-    <div className="grid h-screen grid-cols-4 grid-rows-1 lg:grid-cols-5 font-poppins">
-      <Navigation />
-      <div className="col-span-3 overflow-auto lg:col-span-4 ">
-        <Outlet />
-      </div>
-      {import.meta.env.MODE !== "production" && <TanStackRouterDevtools />}
-    </div>
-  )
+  // component: () => (
+  //   <div className="grid h-screen grid-cols-4 grid-rows-1 lg:grid-cols-5 font-poppins">
+  //     <Navigation />
+  //     <div className="col-span-3 overflow-auto lg:col-span-4 ">
+  //       <Outlet />
+  //     </div>
+  //     {import.meta.env.MODE !== "production" && <TanStackRouterDevtools />}
+  //   </div>
+  // )
+
+  component: () => <MainLayout />
 });
 
 // creating other routes

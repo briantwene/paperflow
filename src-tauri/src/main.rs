@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use provider::{
-    models::{DownloadInfo, Image, ImageInfo},
+    models::{DownloadInfo, Wallpaper, ImageInfo},
     reddit::download,
 };
 use serde_json::Value;
@@ -68,7 +68,7 @@ fn main() {
 }
 
 #[tauri::command]
-async fn fetch(subreddit: String, sort: String) -> Result<Vec<Image>, String> {
+async fn fetch(subreddit: String, sort: String) -> Result<Vec<Wallpaper>, String> {
     // get images
     match provider::reddit::get_images(subreddit, sort).await {
         Ok(images) => Ok(images),

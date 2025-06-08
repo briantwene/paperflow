@@ -12,13 +12,13 @@ use std::fs::create_dir_all;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
-use super::models::{DownloadInfo, Image};
+use super::models::{DownloadInfo, Wallpaper};
 
 const HOST_URL: &str = "https://oauth.reddit.com";
 const FETCH_LIMIT: i32 = 75;
 
 //fetch images
-pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, Box<dyn Error>> {
+pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper>, Box<dyn Error>> {
     let url = format!(
         "{}/r/{}?limit={}&sort={}",
         HOST_URL, subreddit, FETCH_LIMIT, sort
@@ -36,17 +36,46 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, B
     // Extract image data from response
     let images = response["data"]["children"].as_array().unwrap();
 
-    let mut extracted: Vec<Image> = vec![];
-
-    // loop over each reddit post
+    let mut extracted: Vec<Wallpaper> = vec![];    // loop over each reddit post
     for image in images.iter() {
         let img_data = &image["data"];
         let img_url = &img_data["url"].as_str().unwrap();
 
         if img_url.contains("https://i.redd.it/") {
-            let image: Image = from_value(img_data.clone()).unwrap();
+            // Extract dimensions from preview.images if available
+            let (width, height) = if let Some(preview) = img_data.get("preview") {
+                if let Some(images_array) = preview.get("images") {
+                    if let Some(first_image) = images_array.get(0) {
+                        if let Some(source) = first_image.get("source") {
+                            let width = source.get("width").and_then(|w| w.as_u64()).map(|w| w as u32);
+                            let height = source.get("height").and_then(|h| h.as_u64()).map(|h| h as u32);
+                            (width, height)
+                        } else {
+                            (None, None)
+                        }
+                    } else {
+                        (None, None)
+                    }
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            };
 
-            //add the map to vector
+            // Extract subreddit name
+            let subreddit = img_data.get("subreddit").and_then(|s| s.as_str()).map(|s| s.to_string());            // Create Wallpaper struct with manual field assignment to include new fields
+            let image = Wallpaper {
+                id: img_data.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                url: img_url.to_string(),
+                title: img_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                author: img_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                width,
+                height,
+                subreddit,
+            };
+
+            //add the image to vector
             extracted.push(image);
         } else {
             continue;

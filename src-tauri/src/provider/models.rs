@@ -4,11 +4,14 @@ use log::info;
 use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Image {
+pub struct Wallpaper {
     pub id: String,
     pub url: String,
     pub title: String,
     pub author: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub subreddit: Option<String>,
 }
 
 
