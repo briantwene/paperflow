@@ -56,9 +56,11 @@ const Settings = () => {
   const redditProvider = {
     type: "reddit" as ProviderType,
     isConnected: redditConnection?.active || false,
-    username: redditConnection?.active ? "authenticated_user" : undefined,
+    username: redditConnection?.username,
     sources: redditConnection?.sources || []
   };
+
+  console.log("reddit provider", redditProvider)
 
   const handleConnectReddit = async () => {
     setIsConnectingToProvider(true);
@@ -266,14 +268,20 @@ const Settings = () => {
                   </Button>
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Reddit */}
+              <Separator /> {/* Reddit */}
               <div className="space-y-4">
+                {" "}
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-1">
-                    <h3 className="font-medium">Reddit</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-medium">Reddit</h3>
+                      {redditProvider?.isConnected &&
+                        redditProvider.username && (
+                          <Badge variant="secondary" className="text-xs">
+                            u/{redditProvider.username}
+                          </Badge>
+                        )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       Browse wallpapers from subreddits
                     </p>
@@ -311,7 +319,6 @@ const Settings = () => {
                     </Button>
                   )}
                 </div>
-
                 {redditProvider?.isConnected && (
                   <>
                     <Separator />
@@ -365,9 +372,7 @@ const Settings = () => {
                   </>
                 )}
               </div>
-
               <Separator />
-
               {/* Wallhaven */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
@@ -382,9 +387,7 @@ const Settings = () => {
                   </Badge>
                 </div>
               </div>
-
               <Separator />
-
               {/* Unsplash */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">

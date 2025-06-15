@@ -53,10 +53,13 @@ const GeneralSettingsTab = () => {
   });
 
   const formValues = form.watch();
-
   // TODO: Remove this
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    saveSettings(values);
+    saveSettings({
+      ...values,
+      providerUsernames: {},
+      providerSources: {}
+    });
     // save the values in the state
   };
 
@@ -71,12 +74,15 @@ const GeneralSettingsTab = () => {
       form.setValue("path", selectedPath as string);
     }
   };
-
   useEffect(() => {
     //TODO: could do a check to see if the theme is the same
     setTheme(formValues?.theme as Theme);
 
-    saveSettings(formValues);
+    saveSettings({
+      ...formValues,
+      providerUsernames: {},
+      providerSources: {}
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formValues.theme, formValues.path]);
 

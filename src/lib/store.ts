@@ -13,6 +13,10 @@ const getStore = async () => await load("settings.json", { autoSave: true });
 interface settingState {
   path: string;
   theme: string;
+  // Provider usernames for persistence
+  providerUsernames: { [provider: string]: string };
+  // Provider sources for persistence
+  providerSources: { [provider: string]: string[] };
 }
 
 type ConnectionStatuses = { [key: string]: boolean };
@@ -42,19 +46,56 @@ type ConnectionState = {
 export interface SettingsStore extends settingState {
   setDownloadPath: (path: string) => Promise<void>;
   setTheme: (theme: string) => Promise<void>;
+  // Provider data management
+  setProviderUsername: (provider: string, username: string) => Promise<void>;
+  clearProviderUsername: (provider: string) => Promise<void>;
+  setProviderSources: (provider: string, sources: string[]) => Promise<void>;
   _hydrated: boolean;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
-  devtools((set) => ({
+  devtools((set, get) => ({
     path: "raaa",
     theme: "reee",
+    providerUsernames: {},
+    providerSources: {},
     _hydrated: false,
     setDownloadPath: async (path) => {
       set({ path: path });
     },
     setTheme: async (theme) => {
       set({ theme: theme });
+    },
+    setProviderUsername: async (provider: string, username: string) => {
+      const newUsernames = { ...get().providerUsernames, [provider]: username };
+      set({ providerUsernames: newUsernames });
+      await saveSettings({
+        path: get().path,
+        theme: get().theme,
+        providerUsernames: newUsernames,
+        providerSources: get().providerSources
+      });
+    },
+    clearProviderUsername: async (provider: string) => {
+      const newUsernames = { ...get().providerUsernames };
+      delete newUsernames[provider];
+      set({ providerUsernames: newUsernames });
+      await saveSettings({
+        path: get().path,
+        theme: get().theme,
+        providerUsernames: newUsernames,
+        providerSources: get().providerSources
+      });
+    },
+    setProviderSources: async (provider: string, sources: string[]) => {
+      const newSources = { ...get().providerSources, [provider]: sources };
+      set({ providerSources: newSources });
+      await saveSettings({
+        path: get().path,
+        theme: get().theme,
+        providerUsernames: get().providerUsernames,
+        providerSources: newSources
+      });
     }
   }))
 );
@@ -78,23 +119,40 @@ const loadSettingsStore = async () => {
   const store = await getStore();
   const path = await store.get("path");
   const theme = await store.get("theme");
+  const providerUsernames = await store.get("providerUsernames");
+  const providerSources = await store.get("providerSources");
 
   const parsedPath = z.string().safeParse(path);
   const parsedTheme = z.string().safeParse(theme);
+  const parsedUsernames = z.record(z.string()).safeParse(providerUsernames);
+  const parsedSources = z
+    .record(z.array(z.string()))
+    .safeParse(providerSources);
+
+  const updates: Partial<settingState> = {};
 
   if (parsedPath.success) {
-    useSettingsStore.setState({
-      path: parsedPath.data
-    });
+    updates.path = parsedPath.data;
   }
 
   if (parsedTheme.success) {
-    useSettingsStore.setState({
-      theme: parsedTheme.data
-    });
+    updates.theme = parsedTheme.data;
+  }
+
+  if (parsedUsernames.success) {
+    updates.providerUsernames = parsedUsernames.data;
+  } else {
+    updates.providerUsernames = {};
+  }
+
+  if (parsedSources.success) {
+    updates.providerSources = parsedSources.data;
+  } else {
+    updates.providerSources = {};
   }
 
   useSettingsStore.setState({
+    ...updates,
     _hydrated: true
   });
 };
@@ -108,7 +166,8 @@ export const useConnectionStore = create<ConnectionState>()(
           src,
           connect,
           active: false,
-          sources: sources || []
+          sources: sources || [],
+          username: undefined
         })
       ),
       // Authentication state
@@ -118,7 +177,6 @@ export const useConnectionStore = create<ConnectionState>()(
       isLoading: false,
       isConnecting: null,
       _hydrated: false,
-
       fetchStatuses: async () => {
         set({ isLoading: true });
         try {
@@ -139,11 +197,26 @@ export const useConnectionStore = create<ConnectionState>()(
 
           const isAuthenticated = authenticatedProviders.length > 0;
 
+          // Get persistent data from settings store
+          const settingsStore = useSettingsStore.getState();
+
           set((state) => ({
-            connections: state.connections.map((connection) => ({
-              ...connection,
-              active: newStatuses[connection.name.toLowerCase()] || false
-            })),
+            connections: state.connections.map((connection) => {
+              const providerName = connection.name.toLowerCase();
+              const isActive = newStatuses[providerName] || false;
+
+              return {
+                ...connection,
+                active: isActive,
+                username: isActive
+                  ? settingsStore.providerUsernames[providerName]
+                  : undefined,
+                sources:
+                  settingsStore.providerSources[providerName] ||
+                  connection.sources ||
+                  []
+              };
+            }),
             isAuthenticated,
             authenticatedProviders,
             isLoading: false,
@@ -155,7 +228,8 @@ export const useConnectionStore = create<ConnectionState>()(
           set((state) => ({
             connections: state.connections.map((connection) => ({
               ...connection,
-              active: false
+              active: false,
+              username: undefined
             })),
             isAuthenticated: false,
             authenticatedProviders: [],
@@ -164,7 +238,6 @@ export const useConnectionStore = create<ConnectionState>()(
           }));
         }
       },
-
       connect: async (provider: string) => {
         const connection = get().connections.find(
           (conn) => conn.name.toLowerCase() === provider.toLowerCase()
@@ -181,6 +254,24 @@ export const useConnectionStore = create<ConnectionState>()(
           const result: string = await invoke(connection.connect);
           console.log("Auth result:", result);
 
+          // If Reddit, try to fetch username
+          if (provider.toLowerCase() === "reddit") {
+            try {
+              const userInfo: { username: string } = await invoke(
+                "get_reddit_user_info"
+              );
+              const settingsStore = useSettingsStore.getState();
+              await settingsStore.setProviderUsername(
+                "reddit",
+                userInfo.username
+              );
+              console.log("Retrieved Reddit username:", userInfo.username);
+            } catch (usernameError) {
+              console.warn("Could not fetch Reddit username:", usernameError);
+              // Continue without username - auth was successful
+            }
+          }
+
           // Refresh the connection statuses after successful authentication
           await get().fetchStatuses();
           return true;
@@ -191,7 +282,6 @@ export const useConnectionStore = create<ConnectionState>()(
           set({ isConnecting: null });
         }
       },
-
       disconnect: async (provider: string) => {
         set({ isConnecting: provider });
 
@@ -200,6 +290,10 @@ export const useConnectionStore = create<ConnectionState>()(
             // Use the new v2 revoke command
             const result: string = await invoke("revoke_reddit_auth_v2");
             console.log("revoke result:", result);
+
+            // Clear username on disconnect
+            const settingsStore = useSettingsStore.getState();
+            await settingsStore.clearProviderUsername("reddit");
 
             // Refresh the connection statuses
             await get().fetchStatuses();
@@ -216,9 +310,7 @@ export const useConnectionStore = create<ConnectionState>()(
         } finally {
           set({ isConnecting: null });
         }
-      },
-
-      // Source management methods
+      }, // Source management methods
       addSource: (provider: string, source: string) => {
         set((state) => ({
           connections: state.connections.map((connection) =>
@@ -230,6 +322,15 @@ export const useConnectionStore = create<ConnectionState>()(
               : connection
           )
         }));
+
+        // Also persist to settings store
+        const settingsStore = useSettingsStore.getState();
+        const currentSources =
+          settingsStore.providerSources[provider.toLowerCase()] || [];
+        settingsStore.setProviderSources(provider.toLowerCase(), [
+          ...currentSources,
+          source
+        ]);
       },
 
       removeSource: (provider: string, source: string) => {
@@ -245,6 +346,15 @@ export const useConnectionStore = create<ConnectionState>()(
               : connection
           )
         }));
+
+        // Also remove from settings store
+        const settingsStore = useSettingsStore.getState();
+        const currentSources =
+          settingsStore.providerSources[provider.toLowerCase()] || [];
+        settingsStore.setProviderSources(
+          provider.toLowerCase(),
+          currentSources.filter((s) => s !== source)
+        );
       },
 
       updateSources: (provider: string, sources: string[]) => {
@@ -255,6 +365,10 @@ export const useConnectionStore = create<ConnectionState>()(
               : connection
           )
         }));
+
+        // Also update settings store
+        const settingsStore = useSettingsStore.getState();
+        settingsStore.setProviderSources(provider.toLowerCase(), sources);
       },
 
       // Utility methods for access control

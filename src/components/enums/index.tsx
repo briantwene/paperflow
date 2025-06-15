@@ -15,6 +15,7 @@ export type ConnectionObject = {
   src: string;
   active: boolean;
   sources?: string[];
+  username?: string;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components

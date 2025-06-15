@@ -104,6 +104,50 @@ pub async fn check_reddit_auth_status_v2() -> Result<bool, String> {
 }
 
 #[tauri::command]
+pub async fn get_reddit_user_info() -> Result<serde_json::Value, String> {
+    use crate::auth::reddit_auth::RedditAuth;
+    use crate::utils::create_http;
+    
+    let auth = RedditAuth::new();
+    
+    // Check if authenticated
+    if !auth.is_authenticated().await {
+        return Err("Not authenticated with Reddit".to_string());
+    }
+    
+    // Get valid token
+    let token = auth.ensure_valid_token().await
+        .map_err(|e| format!("Failed to get valid token: {}", e))?;
+    
+    // Make API call to get user info using the existing HTTP client pattern
+    let client = create_http();
+    let response = client
+        .get("https://oauth.reddit.com/api/v1/me")
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch user info: {}", e))?;
+    
+    if !response.status().is_success() {
+        return Err(format!("Reddit API error: {}", response.status()));
+    }
+    
+    let user_data: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse user info response: {}", e))?;
+    
+    // Extract username
+    if let Some(username) = user_data.get("name").and_then(|v| v.as_str()) {
+        Ok(serde_json::json!({
+            "username": username
+        }))
+    } else {
+        Err("Could not extract username from Reddit response".to_string())
+    }
+}
+
+#[tauri::command]
 pub async fn demo_auth_flow_v2() -> Result<String, String> {
     use crate::auth::tests;
     
