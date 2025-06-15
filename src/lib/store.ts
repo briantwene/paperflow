@@ -29,6 +29,10 @@ type ConnectionState = {
   fetchStatuses: () => Promise<void>;
   connect: (provider: string) => Promise<boolean>;
   disconnect: (provider: string) => Promise<boolean>;
+  // Source management methods
+  addSource: (provider: string, source: string) => void;
+  removeSource: (provider: string, source: string) => void;
+  updateSources: (provider: string, sources: string[]) => void;
   // Utility methods for access control
   hasProviderAccess: (provider: string) => boolean;
   hasAnyAccess: () => boolean;
@@ -98,12 +102,15 @@ const loadSettingsStore = async () => {
 export const useConnectionStore = create<ConnectionState>()(
   devtools(
     (set, get) => ({
-      connections: ConnectionSettingsEnum.map(({ name, src, connect }) => ({
-        name,
-        src,
-        connect,
-        active: false
-      })),
+      connections: ConnectionSettingsEnum.map(
+        ({ name, src, connect, sources }) => ({
+          name,
+          src,
+          connect,
+          active: false,
+          sources: sources || []
+        })
+      ),
       // Authentication state
       isAuthenticated: false,
       authenticatedProviders: [],
@@ -211,6 +218,45 @@ export const useConnectionStore = create<ConnectionState>()(
         }
       },
 
+      // Source management methods
+      addSource: (provider: string, source: string) => {
+        set((state) => ({
+          connections: state.connections.map((connection) =>
+            connection.name.toLowerCase() === provider.toLowerCase()
+              ? {
+                  ...connection,
+                  sources: [...(connection.sources || []), source]
+                }
+              : connection
+          )
+        }));
+      },
+
+      removeSource: (provider: string, source: string) => {
+        set((state) => ({
+          connections: state.connections.map((connection) =>
+            connection.name.toLowerCase() === provider.toLowerCase()
+              ? {
+                  ...connection,
+                  sources: (connection.sources || []).filter(
+                    (s) => s !== source
+                  )
+                }
+              : connection
+          )
+        }));
+      },
+
+      updateSources: (provider: string, sources: string[]) => {
+        set((state) => ({
+          connections: state.connections.map((connection) =>
+            connection.name.toLowerCase() === provider.toLowerCase()
+              ? { ...connection, sources }
+              : connection
+          )
+        }));
+      },
+
       // Utility methods for access control
       hasProviderAccess: (provider: string) => {
         const state = get();
@@ -261,11 +307,17 @@ export const useConnectionActions = () => {
   const disconnect = useConnectionStore((state) => state.disconnect);
   const fetchStatuses = useConnectionStore((state) => state.fetchStatuses);
   const isConnecting = useConnectionStore((state) => state.isConnecting);
+  const addSource = useConnectionStore((state) => state.addSource);
+  const removeSource = useConnectionStore((state) => state.removeSource);
+  const updateSources = useConnectionStore((state) => state.updateSources);
 
   return {
     connect,
     disconnect,
     fetchStatuses,
-    isConnecting
+    isConnecting,
+    addSource,
+    removeSource,
+    updateSources
   };
 };
