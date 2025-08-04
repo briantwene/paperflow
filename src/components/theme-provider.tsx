@@ -10,11 +10,13 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme;
+  effectiveTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
 };
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  effectiveTheme: "light",
   setTheme: () => null
 };
 
@@ -48,9 +50,18 @@ export const ThemeProvider = ({
 
     root.classList.add(theme);
   }, [theme]);
+  const getEffectiveTheme = (): "light" | "dark" => {
+    if (theme === "system") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    }
+    return theme as "light" | "dark";
+  };
 
   const value = {
     theme,
+    effectiveTheme: getEffectiveTheme(),
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);

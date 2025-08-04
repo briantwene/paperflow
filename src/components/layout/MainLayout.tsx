@@ -23,7 +23,7 @@ import paperflowLightMain from "@/assets/paperflowLightMain.svg";
 // };
 
 export function MainLayout() {
-  const { theme } = useTheme();
+  const { effectiveTheme } = useTheme();
   const navigate = useNavigate();
    const currentRoute = useLocation({
     select: (location) => location.pathname,
@@ -57,7 +57,7 @@ export function MainLayout() {
               <Button
                 variant="ghost"
                 size="icon"
-                 onClick={() => navigate({to: "/"})}
+                onClick={() => navigate({ to: "/" })}
                 className="mr-2"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -68,30 +68,40 @@ export function MainLayout() {
               className="relative cursor-pointer group"
               onMouseEnter={() => setIsLogoHovered(true)}
               onMouseLeave={() => setIsLogoHovered(false)}
-              onClick={() => navigate({to: "/"})}
+              onClick={() => navigate({ to: "/" })}
             >
-              <img 
-                src={theme === 'dark' ? paperflowDarkMain : paperflowLightMain} 
-                alt="Paper Flow" 
+              <img
+                src={
+                  effectiveTheme === "dark"
+                    ? paperflowDarkMain
+                    : paperflowLightMain
+                }
+                alt="Paper Flow"
                 className={cn(
                   "h-8 transition-all duration-300",
                   isLogoHovered && "scale-105"
                 )}
               />
-              <div className={cn(
-                "absolute inset-0 rounded-full transition-all duration-300",
-                isLogoHovered ? [
-                  theme === 'dark' ? "bg-primary/10" : "bg-primary/5",
-                  "blur-xl"
-                ] : "blur-none"
-              )} />
+              <div
+                className={cn(
+                  "absolute inset-0 rounded-full transition-all duration-300",
+                  isLogoHovered
+                    ? [
+                        effectiveTheme === "dark"
+                          ? "bg-primary/10"
+                          : "bg-primary/5",
+                        "blur-xl"
+                      ]
+                    : "blur-none"
+                )}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant={currentRoute === "home" ? "secondary" : "ghost"}
               size="icon"
-               onClick={() => navigate({to: "/"})}
+              onClick={() => navigate({ to: "/" })}
             >
               <Home className="w-4 h-4" />
               <span className="sr-only">Home</span>
@@ -99,7 +109,7 @@ export function MainLayout() {
             <Button
               variant={currentRoute === "settings" ? "secondary" : "ghost"}
               size="icon"
-               onClick={() => navigate({to: "/settings"})}
+              onClick={() => navigate({ to: "/settings" })}
             >
               <SettingsIcon className="w-4 h-4" />
               <span className="sr-only">Settings</span>
