@@ -6,8 +6,8 @@ import {
   Folder,
   LogIn,
   LogOut,
-  Trash,
-  Plus,
+  // Trash,
+  // Plus,
   Loader2,
   Settings as SettingsIcon
 } from "lucide-react";
@@ -25,7 +25,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+//import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
@@ -43,11 +43,11 @@ const Settings = () => {
     connect,
     disconnect,
     isConnecting,
-    addSource,
-    removeSource: removeSourceFromStore
+    //addSource,
+    //removeSource: removeSourceFromStore
   } = useConnectionActions();
   const [isConnectingToProvider, setIsConnectingToProvider] = useState(false);
-  const [newSource, setNewSource] = useState("");
+  //const [newSource, setNewSource] = useState("");
   const [bypassAuth, setBypassAuth] = useState(false);
   // Get reddit connection from store
   const redditConnection = connectionStore.connections.find(
@@ -106,26 +106,26 @@ const Settings = () => {
       });
     }
   };
-  const handleAddSource = (provider: ProviderType) => {
-    if (!newSource.trim()) {
-      toast({
-        title: "Source Required",
-        description: "Please enter a valid subreddit name",
-        variant: "destructive"
-      });
-      return;
-    }
+  // const handleAddSource = (provider: ProviderType) => {
+  //   if (!newSource.trim()) {
+  //     toast({
+  //       title: "Source Required",
+  //       description: "Please enter a valid subreddit name",
+  //       variant: "destructive"
+  //     });
+  //     return;
+  //   }
 
-    addSource(provider, newSource.trim());
-    setNewSource("");
-    toast({
-      title: "Source Added",
-      description: `Added r/${newSource} to your sources`
-    });
-  };
-  const handleRemoveSource = (provider: ProviderType, source: string) => {
-    removeSourceFromStore(provider, source);
-  };
+  //   addSource(provider, newSource.trim());
+  //   setNewSource("");
+  //   toast({
+  //     title: "Source Added",
+  //     description: `Added r/${newSource} to your sources`
+  //   });
+  // };
+  // const handleRemoveSource = (provider: ProviderType, source: string) => {
+  //   removeSourceFromStore(provider, source);
+  // };
   const handleSetDownloadLocation = async () => {
     try {
       const selectedPath = await open({
@@ -249,26 +249,6 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Development Mode Toggle */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <h3 className="font-medium">Development Mode</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Bypass authentication for testing
-                    </p>
-                  </div>
-                  <Button
-                    variant={bypassAuth ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setBypassAuth(!bypassAuth)}
-                    className="flex-shrink-0"
-                  >
-                    {bypassAuth ? "Enabled" : "Disabled"}
-                  </Button>
-                </div>
-              </div>
-              <Separator /> {/* Reddit */}
               <div className="space-y-4">
                 {" "}
                 <div className="flex items-center justify-between gap-4">

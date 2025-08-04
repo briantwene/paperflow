@@ -24,7 +24,6 @@ import {
 import { ImageViewer } from "@/components/ImageViewer";
 import { ImageView } from "@/utils/models";
 import { invoke } from "@tauri-apps/api/core";
-import { title } from "process";
 import { toast } from "@/hooks/use-toast";
 
 const View = () => {
