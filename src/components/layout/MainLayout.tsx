@@ -36,7 +36,7 @@ export function MainLayout() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -53,7 +53,7 @@ export function MainLayout() {
       >
         <div className="flex items-center justify-between h-16 px-4 mx-auto sm:px-6 lg:px-8 max-w-screen-2xl">
           <div className="flex items-center gap-2">
-            {currentRoute === "view" && (
+            {currentRoute.includes("view") && (
               <Button
                 variant="ghost"
                 size="icon"
