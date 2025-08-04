@@ -29,7 +29,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/plugin-dialog";
 
 // Define provider types
@@ -48,7 +47,6 @@ const Settings = () => {
   } = useConnectionActions();
   const [isConnectingToProvider, setIsConnectingToProvider] = useState(false);
   //const [newSource, setNewSource] = useState("");
-  const [bypassAuth, setBypassAuth] = useState(false);
   // Get reddit connection from store
   const redditConnection = connectionStore.connections.find(
     (conn) => conn.name.toLowerCase() === "reddit"
