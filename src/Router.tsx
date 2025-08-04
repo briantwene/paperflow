@@ -1,59 +1,64 @@
-import { RootRoute, Route, Router, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter
+} from "@tanstack/react-router";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Favorite from "./pages/Favorite";
 import Collections from "./pages/Collections";
 import Settings from "./pages/Settings";
-import Navigation from "./components/Navigation";
 import View from "./pages/View";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { MainLayout } from "./components/layout/MainLayout";
 
 //creating the base route
-const rootRoute = new RootRoute({
-  component: () => (
-    <div className="grid h-screen grid-cols-4 grid-rows-1 lg:grid-cols-5 font-poppins">
-      <Navigation />
-      <div className="col-span-3 overflow-auto lg:col-span-4 ">
-        <Outlet />
-      </div>
-      {import.meta.env.MODE !== "production" && <TanStackRouterDevtools />}
-    </div>
-  )
+const rootRoute = createRootRoute({
+  // component: () => (
+  //   <div className="grid h-screen grid-cols-4 grid-rows-1 lg:grid-cols-5 font-poppins">
+  //     <Navigation />
+  //     <div className="col-span-3 overflow-auto lg:col-span-4 ">
+  //       <Outlet />
+  //     </div>
+  //     {import.meta.env.MODE !== "production" && <TanStackRouterDevtools />}
+  //   </div>
+  // )
+
+  component: () => <MainLayout />
 });
 
 // creating other routes
 
 // TODO: need to expand it for nested routes
-const indexRoute = new Route({
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: Index
 });
-const searchRoute = new Route({
+const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "search",
   component: Search
 });
-const favoriteRoute = new Route({
+const favoriteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "favorites",
   component: Favorite
 });
-const collectionRoute = new Route({
+const collectionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "collections",
   component: Collections
 });
-const settingsRoute = new Route({
+const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "settings",
   component: Settings
 });
-const viewRoute = new Route({
+const viewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/view"
 });
-const viewImageRoute = new Route({
+const viewImageRoute = createRoute({
   getParentRoute: () => viewRoute,
   path: "$id",
   component: View,
@@ -75,7 +80,7 @@ const routeTree = rootRoute.addChildren([
   viewRoute.addChildren([viewImageRoute])
 ]);
 
-const appRouter = new Router({ routeTree });
+const appRouter = createRouter({ routeTree });
 
 declare module "@tanstack/react-router" {
   interface Register {

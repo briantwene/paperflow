@@ -8,28 +8,24 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { ConnectionObject } from "../enums";
-import { invoke } from "@tauri-apps/api/core";
 import { Check, Loader2 } from "lucide-react";
-import { useConnectionStore } from "@/lib/store";
+import { useConnectionActions } from "@/lib/store";
 
-const ConnectionCard = ({ name, src, connect, active }: ConnectionObject) => {
+const ConnectionCard = ({
+  name,
+  src,
+  active
+}: Omit<ConnectionObject, "connect">) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const fetchStatuses = useConnectionStore((state) => state.fetchStatuses);
+  const { connect: connectToProvider, isConnecting } = useConnectionActions();
+
+  const isCurrentlyConnecting = isConnecting === name.toLowerCase();
 
   const handleConnect = async () => {
-    setIsConnecting(true);
-    try {
-      const result: string = await invoke(connect);
-      console.log("Auth result:", result);
-
-      // Refresh the connection statuses after successful authentication
-      await fetchStatuses();
-    } catch (error) {
-      console.error("Authentication failed:", error);
+    const success = await connectToProvider(name);
+    if (!success) {
+      console.error("Failed to connect to", name);
       // You might want to show a toast notification here
-    } finally {
-      setIsConnecting(false);
     }
   };
   const buttonDisplay = () => {
@@ -39,10 +35,10 @@ const ConnectionCard = ({ name, src, connect, active }: ConnectionObject) => {
           className={`w-28 transition-all duration-200 ease-in-out absolute bg-transparent ${
             isHovered && active ? "bg-green-500 text-white" : ""
           } ${isHovered ? "opacity-100 visible" : "opacity-0 invisible"}`}
-          disabled={active || isConnecting}
+          disabled={active || isCurrentlyConnecting}
           onClick={handleConnect}
         >
-          {isConnecting ? (
+          {isCurrentlyConnecting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : active ? (
             <Check />

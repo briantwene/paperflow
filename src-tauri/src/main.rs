@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use provider::{
-    models::{DownloadInfo, Image, ImageInfo},
+    models::{DownloadInfo, Wallpaper, ImageInfo},
     reddit::download,
 };
 use serde_json::Value;
@@ -34,11 +34,13 @@ fn main() {
             start_reddit_login,
             auth_status,
             disconnect,
-            reddit_download,            // New improved auth commands
+            reddit_download,
+            // New improved auth commands
             auth::start_reddit_auth_v2,
             auth::get_reddit_token_v2,
             auth::revoke_reddit_auth_v2,
             auth::check_reddit_auth_status_v2,
+            auth::get_reddit_user_info,
             auth::demo_auth_flow_v2
         ])
         .setup(|app| {
@@ -68,7 +70,7 @@ fn main() {
 }
 
 #[tauri::command]
-async fn fetch(subreddit: String, sort: String) -> Result<Vec<Image>, String> {
+async fn fetch(subreddit: String, sort: String) -> Result<Vec<Wallpaper>, String> {
     // get images
     match provider::reddit::get_images(subreddit, sort).await {
         Ok(images) => Ok(images),

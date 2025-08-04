@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import appRouter from "./Router";
 import { ThemeProvider } from "./components/theme-provider";
 import StoreLoader from "./lib/storeLoader";
+import { Toaster } from "./components/ui/toaster";
 import("preline");
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <ThemeProvider>
       <StoreLoader>
         <RouterProvider router={appRouter} />
+        <Toaster />
       </StoreLoader>
     </ThemeProvider>
   </React.StrictMode>
