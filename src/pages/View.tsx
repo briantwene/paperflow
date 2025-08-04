@@ -24,6 +24,8 @@ import {
 import { ImageViewer } from "@/components/ImageViewer";
 import { ImageView } from "@/utils/models";
 import { invoke } from "@tauri-apps/api/core";
+import { title } from "process";
+import { toast } from "@/hooks/use-toast";
 
 const View = () => {
   const id = useParams({
@@ -46,9 +48,19 @@ const View = () => {
   };
 
   const handleDownload = async () => {
+    toast({
+      title: "Downloading Wallpaper",
+      description: `Downloading ${image.title}...`
+    });
+
     setIsDownloading(true);
     await downloadWallpaper(image);
     setIsDownloading(false);
+
+    toast({
+      title: "Download Complete",
+      description: `Wallpaper ${image.title} downloaded successfully!`
+    });
   };
 
   useEffect(() => {
@@ -150,7 +162,7 @@ const View = () => {
                 </div>
                 <div className="flex items-center min-w-0 gap-2">
                   <Tag className="flex-shrink-0 w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm truncate">r/{image.subreddit}</span>
+                  <span className="text-sm truncate">{image.subreddit}</span>
                 </div>
               </div>
             </CardContent>
