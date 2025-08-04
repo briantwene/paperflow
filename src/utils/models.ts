@@ -14,12 +14,15 @@ export interface Image {
 }
 
 export interface ImageView {
-  url: string;
+  url: string; // Image URL for display
+  permalink: string; // Reddit post URL for "Original Post" link
   title: string;
   author: string;
   karma: number;
   subreddit: string;
   created: string;
+  width?: number; // Image width
+  height?: number; // Image height
 }
 
 export interface Collection {

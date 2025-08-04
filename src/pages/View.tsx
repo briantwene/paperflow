@@ -109,7 +109,9 @@ const View = () => {
                 {image.title}
               </CardTitle>
               <CardDescription>
-                {image.width} x {image.height}
+                {image.width && image.height
+                  ? `${image.width} x ${image.height}`
+                  : "Resolution unknown"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -137,7 +139,7 @@ const View = () => {
                 <div className="flex items-center min-w-0 gap-2">
                   <Link className="flex-shrink-0 w-4 h-4 text-muted-foreground" />
                   <a
-                    href={image.url}
+                    href={image.permalink}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center text-sm truncate hover:underline"

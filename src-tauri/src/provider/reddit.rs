@@ -5,6 +5,7 @@ use image::ImageReader;
 use serde_json::{from_value, Value};
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
+use chrono::{TimeZone, Utc};
 
 use core::panic;
 use std::error::Error;
@@ -91,8 +92,6 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     let url = format!("https://reddit.com/{}.json", image_id);
     println!("{url}");
 
-    // let mut img_map = Map::new();
-    // let mut info_map = Map::new();
     //get and setup fetcher
     let fetcher = create_http();
 
@@ -100,11 +99,48 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     let response = fetcher.get(url).send().await?;
     let response = response.json::<Value>().await?;
 
-    let image = &response[0]["data"]["children"][0]["data"];
+    let image_data = &response[0]["data"]["children"][0]["data"];
 
-    let info: ImageInfo = from_value(image.clone()).unwrap();
+    // Extract image dimensions from preview data if available
+    let (width, height) = if let Some(preview) = image_data.get("preview") {
+        if let Some(images) = preview.get("images").and_then(|i| i.as_array()) {
+            if let Some(first_image) = images.first() {
+                if let Some(source) = first_image.get("source") {
+                    let width = source.get("width").and_then(|w| w.as_i64()).map(|w| w as i32);
+                    let height = source.get("height").and_then(|h| h.as_i64()).map(|h| h as i32);
+                    (width, height)
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            }
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
 
-    // //somehow get the image size and resoultion in rust
+    // Manually construct ImageInfo with the additional fields
+    let info = ImageInfo {
+        url: image_data.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        permalink: format!("https://reddit.com{}", 
+            image_data.get("permalink").and_then(|v| v.as_str()).unwrap_or("")),
+        title: image_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        author: image_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        created: {
+            let created_utc = image_data.get("created_utc").and_then(|v| v.as_f64()).unwrap_or(0.0) * 1000.0;
+            let created_utc = chrono::Utc.timestamp_millis_opt(created_utc as i64).unwrap();
+            created_utc.to_rfc2822()
+        },
+        score: image_data.get("score").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+        subreddit_name_prefixed: image_data.get("subreddit_name_prefixed")
+            .and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        width,
+        height,
+    };
+
     println!("{:#?}", info);
 
     Ok(info)
