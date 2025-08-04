@@ -319,7 +319,7 @@ const Settings = () => {
                     </Button>
                   )}
                 </div>
-                {redditProvider?.isConnected && (
+                {/* {redditProvider?.isConnected && (
                   <>
                     <Separator />
                     <div className="space-y-4">
@@ -370,10 +370,9 @@ const Settings = () => {
                       </div>
                     </div>
                   </>
-                )}
+                )} */}
               </div>
-              <Separator />
-              {/* Wallhaven */}
+              {/* <Separator />
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-1">
@@ -388,7 +387,6 @@ const Settings = () => {
                 </div>
               </div>
               <Separator />
-              {/* Unsplash */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-1">
@@ -401,7 +399,7 @@ const Settings = () => {
                     Coming Soon
                   </Badge>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>
