@@ -11,7 +11,7 @@ import {
   Loader2,
   Settings as SettingsIcon
 } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/hooks/useThemeContext";
 import {
   useSettingsStore,
   useConnectionStore,

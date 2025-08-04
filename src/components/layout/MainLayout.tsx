@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Home, Settings as SettingsIcon, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/hooks/useThemeContext";
 import { cn } from "@/lib/utils";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";

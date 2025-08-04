@@ -1,27 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
-
-export type Theme = "light" | "dark" | "system";
-
-type ThemeProviderProps = {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-};
-
-type ThemeProviderState = {
-  theme: Theme;
-  effectiveTheme: "light" | "dark";
-  setTheme: (theme: Theme) => void;
-};
-
-const initialState: ThemeProviderState = {
-  theme: "system",
-  effectiveTheme: "light",
-  setTheme: () => null
-};
-
-export const ThemeProviderContext =
-  createContext<ThemeProviderState>(initialState);
+import { useEffect, useState } from "react";
+import { Theme, ThemeProviderProps } from "../types/theme";
+import { ThemeProviderContext } from "../hooks/useThemeContext";
 
 export const ThemeProvider = ({
   children,
@@ -73,11 +52,4 @@ export const ThemeProvider = ({
       {children}
     </ThemeProviderContext.Provider>
   );
-};
-
-export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
-  if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider");
-  return context;
 };

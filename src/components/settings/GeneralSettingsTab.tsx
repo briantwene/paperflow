@@ -28,8 +28,8 @@ import {
   SelectValue
 } from "../ui/select";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useTheme } from "@/hooks/useTheme";
-import { Theme } from "../theme-provider";
+import { useTheme } from "@/hooks/useThemeContext";
+import { Theme } from "@/types/theme";
 
 const formSchema = z.object({
   path: z.string(),
