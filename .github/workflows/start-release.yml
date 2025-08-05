@@ -24,14 +24,14 @@ jobs:
                 node-version-file: ".nvmrc"
                 cache: "npm"
             
-            - run: npm ci
+            - run: yarn install --frozen-lockfile
 
             - name: Create Release Pull Request or Publish
               id: changesets
               uses: changesets/action@v1
               with:
                 # this should create the github tags hopefully
-                publish: npm run changeset:tag
+                publish: yarn changeset tag
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

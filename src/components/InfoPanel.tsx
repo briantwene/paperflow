@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api";
 import { ImageView } from "../utils/models";
 import { Button } from "./ui/button";
 import {
@@ -54,3 +54,5 @@ const InfoPanel = ({ image }: Props) => {
 };
 
 export default InfoPanel;
+
+

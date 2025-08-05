@@ -1,40 +1,32 @@
-// Re-export the unified Wallpaper interface from types
-export type { Wallpaper } from "../types/index";
-import type { Wallpaper } from "../types/index";
-
-// Keep Image as an alias for backward compatibility during transition
 export interface Image {
   id: string;
   url: string;
   title: string;
   author: string;
-  width?: number;
-  height?: number;
-  subreddit?: string;
+  // Add any other properties related to an image
 }
 
 export interface ImageView {
-  url: string; // Image URL for display
-  permalink: string; // Reddit post URL for "Original Post" link
+  url: string;
   title: string;
   author: string;
   karma: number;
   subreddit: string;
   created: string;
-  width?: number; // Image width
-  height?: number; // Image height
 }
+
+
 
 export interface Collection {
   id: number;
   name: string;
   description: string;
-  images: Wallpaper[];
+  images: Image[];
   // Add any other properties related to a collection
 }
 
 export interface LikedPictures {
-  images: Wallpaper[];
+  images: Image[];
   // Add any other properties related to liked pictures
 }
 

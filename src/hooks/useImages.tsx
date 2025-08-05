@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { fetcher } from "../utils/tauriFetcher";
-import { Wallpaper } from "../utils/models";
+import { Image } from "../utils/models";
 const useImages = (subreddit: string, sort: string) => {
   const params = { subreddit, sort };
   const { data, error, isLoading } = useSWR(
@@ -9,7 +9,7 @@ const useImages = (subreddit: string, sort: string) => {
   );
   console.log(data);
   return {
-    wallpapers: data as Wallpaper[],
+    images: data as Image[],
     error,
     isLoading
   };

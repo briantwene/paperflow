@@ -34,13 +34,14 @@ const ConnectionSettingsTab = () => {
           <DialogContent className="flex flex-col sm:max-w-xl lg:max-w-5xl h-4/6">
             <DialogHeader className="text-xl font-semibold">
               Add A Connection
-            </DialogHeader>{" "}
+            </DialogHeader>
             <div className="grid grid-cols-3 gap-4 overflow-auto lg:grid-cols-4 grid-rows-auto">
-              {connections.map(({ name, src, active }) => (
+              {connections.map(({ name, src, connect, active }) => (
                 <ConnectionCard
                   key={name}
                   name={name}
                   src={src}
+                  connect={connect}
                   active={active}
                 />
               ))}

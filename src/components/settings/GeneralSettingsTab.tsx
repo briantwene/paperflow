@@ -27,9 +27,9 @@ import {
   SelectTrigger,
   SelectValue
 } from "../ui/select";
-import { open } from "@tauri-apps/plugin-dialog";
-import { useTheme } from "@/hooks/useThemeContext";
-import { Theme } from "@/types/theme";
+import { open } from "@tauri-apps/api/dialog";
+import { useTheme } from "@/hooks/useTheme";
+import { Theme } from "../theme-provider";
 
 const formSchema = z.object({
   path: z.string(),
@@ -53,13 +53,10 @@ const GeneralSettingsTab = () => {
   });
 
   const formValues = form.watch();
+
   // TODO: Remove this
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    saveSettings({
-      ...values,
-      providerUsernames: {},
-      providerSources: {}
-    });
+    saveSettings(values);
     // save the values in the state
   };
 
@@ -74,15 +71,12 @@ const GeneralSettingsTab = () => {
       form.setValue("path", selectedPath as string);
     }
   };
+
   useEffect(() => {
     //TODO: could do a check to see if the theme is the same
     setTheme(formValues?.theme as Theme);
 
-    saveSettings({
-      ...formValues,
-      providerUsernames: {},
-      providerSources: {}
-    });
+    saveSettings(formValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formValues.theme, formValues.path]);
 
