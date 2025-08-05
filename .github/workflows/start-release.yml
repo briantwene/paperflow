@@ -56,6 +56,15 @@ jobs:
                     }
                     throw error;
                   }
+
+                  const response = await github.rest.repos.getLatestRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                  })
+                  
+                  
+                  return response.data.id
+
     
             - name: Set latest release to prerelease
               if: steps.changesets.outputs.published == 'true' && steps.get_latest_release_id.outputs.result != null
