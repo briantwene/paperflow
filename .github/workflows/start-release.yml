@@ -12,7 +12,7 @@ on:
 # run only if its 
 jobs:
     create-release:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         outputs:
           latest_release_id: ${{ steps.get_latest_release_id.outputs.result }}
         steps:
