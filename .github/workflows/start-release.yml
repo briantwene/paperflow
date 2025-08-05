@@ -42,15 +42,23 @@ jobs:
               uses: actions/github-script@v7
               with:
                 script: |
-                  const response = await github.rest.repos.getLatestRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo
-                  })
-                  
-                  console.log(response)
-                  return response.data.id
+                  try {
+                    const response = await github.rest.repos.getLatestRelease({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo
+                    });
+                    console.log(response);
+                    return response.data.id;
+                  } catch (error) {
+                    if (error.status === 404) {
+                      console.log('No releases found yet');
+                      return null;
+                    }
+                    throw error;
+                  }
     
-            - name: Set latest release to draft
+            - name: Set latest release to prerelease
+              if: steps.changesets.outputs.published == 'true' && steps.get_latest_release_id.outputs.result != null
               uses: actions/github-script@v7
               env:
                 release_id: ${{ steps.get_latest_release_id.outputs.result }}
