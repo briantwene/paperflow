@@ -46,7 +46,7 @@ jobs:
                   repo: context.repo.repo
                   })
                   
-                  console.log(response)
+                  
                   return response.data.id
     
             - name: Set latest release to draft
