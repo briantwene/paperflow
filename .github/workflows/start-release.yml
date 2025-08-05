@@ -38,6 +38,7 @@ jobs:
             # Only continue if changesets actually published something
             - name: Get Latest Release id
               id: get_latest_release_id
+              if: steps.changesets.outputs.published == 'true'
               uses: actions/github-script@v7
               with:
                 script: |
