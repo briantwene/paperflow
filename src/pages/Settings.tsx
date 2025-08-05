@@ -67,7 +67,8 @@ const Settings = () => {
       if (success) {
         toast({
           title: "Connected Successfully",
-          description: "You're now connected to Reddit"
+          description: "You're now connected to Reddit",
+          duration: 3000
         });
       } else {
         toast({

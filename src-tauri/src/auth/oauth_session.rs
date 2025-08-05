@@ -56,7 +56,7 @@ impl OAuthSession {
             
         // Close the auth window after a short delay
         let close_handle = thread::spawn(move || {
-            thread::sleep(Duration::from_secs(3)); // Wait 3 seconds
+            thread::sleep(Duration::from_millis(500)); // Wait 0.5 seconds
             if let Some(window) = app_handle_clone.get_webview_window(&window_label_clone) {
                 if let Err(e) = window.close() {
                     log::warn!("Failed to close auth window: {}", e);
@@ -157,80 +157,48 @@ impl OAuthSession {
             
         log::debug!("Authorization code received");
         
-        // Send success response
+        // Send minimal success response with auto-close
         let page = r#"
             <html>
                 <head>
                     <title>Authentication Complete</title>
                     <style>
                         body { 
-                            font-family: 'Segoe UI', Arial, sans-serif; 
-                            text-align: center; 
-                            padding: 50px;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            color: white;
-                            margin: 0;
-                            min-height: 100vh;
+                            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
                             display: flex;
-                            flex-direction: column;
                             justify-content: center;
                             align-items: center;
+                            min-height: 100vh;
+                            margin: 0;
+                            background: hsl(220 25% 97%);
+                            color: hsl(224 71% 4%);
                         }
-                        .container {
-                            background: rgba(255, 255, 255, 0.1);
-                            backdrop-filter: blur(10px);
-                            border-radius: 20px;
-                            padding: 40px;
-                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
+                        .success {
+                            text-align: center;
+                            padding: 20px;
                         }
-                        .success { 
-                            color: #4CAF50; 
+                        .checkmark {
                             font-size: 3em;
-                            margin-bottom: 20px;
-                            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                            color: hsl(207 89% 50%);
+                            margin-bottom: 10px;
                         }
-                        h1 {
-                            margin: 20px 0;
-                            font-size: 2em;
-                            font-weight: 300;
-                        }
-                        p {
-                            font-size: 1.2em;
-                            line-height: 1.6;
-                            margin: 15px 0;
-                            opacity: 0.9;
-                        }
-                        .countdown {
-                            font-weight: bold;
-                            color: #FFD700;
-                            font-size: 1.1em;
+                        @media (prefers-color-scheme: dark) {
+                            body {
+                                background: hsl(224 71% 4%);
+                                color: hsl(213 31% 91%);
+                            }
                         }
                     </style>
                     <script>
-                        let countdown = 3;
-                        function updateCountdown() {
-                            const element = document.getElementById('countdown');
-                            if (element) {
-                                element.textContent = countdown;
-                                countdown--;
-                                if (countdown >= 0) {
-                                    setTimeout(updateCountdown, 1000);
-                                } else {
-                                    element.textContent = 'Closing...';
-                                }
-                            }
-                        }
-                        window.onload = updateCountdown;
+                        // Auto-close after 1 second
+                        setTimeout(() => {
+                            window.close();
+                        }, 1000);
                     </script>
                 </head>
                 <body>
-                    <div class="container">
-                        <div class="success">✓</div>
-                        <h1>Authentication Complete</h1>
-                        <p>You have successfully authenticated with Reddit!</p>
-                        <p>You can now return to PaperFlow to start browsing.</p>
-                        <p class="countdown">This window will close automatically in <span id="countdown">3</span> seconds.</p>
+                    <div class="success">
+                        <p>Authentication successful!</p>
                     </div>
                 </body>
             </html>
