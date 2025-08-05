@@ -256,9 +256,11 @@ async fn open_login_window(app_handle: &tauri::AppHandle) -> Result<(), String> 
     let redirect_url = format!("http://localhost:32463/callback");
     let url = format!("https://www.reddit.com/api/v1/authorize?client_id={client}&response_type=code&state=yooo&redirect_uri={redirect_url}&duration=permanent&scope=identity,save,read");
 
-    let window_url = tauri::WindowUrl::External(url.parse().unwrap());
+    // In Tauri v2, we use WebviewUrl instead of WindowUrl
+    let webview_url = tauri::WebviewUrl::External(url.parse().unwrap());
 
-    let some_window = tauri::WindowBuilder::new(app_handle, "random", window_url)
+    // In Tauri v2, we use WebviewWindowBuilder instead of WindowBuilder
+    let some_window = tauri::WebviewWindowBuilder::new(app_handle, "random", webview_url)
         .fullscreen(false)
         .resizable(true)
         .title("Settings")
@@ -351,4 +353,34 @@ fn handle_callback(
 
     Ok(())
 }
+
+// =============================================================================
+// MIGRATION EXAMPLE: Using the new improved Reddit auth system
+// =============================================================================
+
+// Example of how to use the new Reddit auth system:
+pub async fn example_usage() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::auth::reddit_auth::RedditAuth;
+    
+    let auth = RedditAuth::new();
+    
+    // Check if user is already authenticated
+    if auth.is_authenticated().await {
+        println!("User is already authenticated");
+        
+        // Get a valid token (automatically refreshes if expired)
+        match auth.ensure_valid_token().await {
+            Ok(token) => println!("Got valid token: {}", &token[..10]), // Only show first 10 chars
+            Err(e) => println!("Failed to get token: {}", e),
+        }
+    } else {
+        println!("User needs to authenticate");
+        // You would call start_reddit_auth_v2 from the frontend
+    }
+    
+    Ok(())
+}
+
+// Legacy function - kept for backward compatibility
+// TODO: Remove once frontend is updated to use v2 commands
 

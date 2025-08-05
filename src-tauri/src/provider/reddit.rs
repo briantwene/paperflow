@@ -1,12 +1,11 @@
-use crate::auth::reddit::get_token;
+use crate::auth::get_reddit_token_for_provider;
 use crate::utils::{create_http, sanitize_filename};
-use crate::{auth::reddit::is_valid_token, provider::models::ImageInfo};
-use image::io::Reader as ImageReader;
-
+use crate::provider::models::ImageInfo;
+use image::ImageReader;
 use serde_json::{from_value, Value};
-use tauri::api::path::{self, picture_dir};
-use tauri::{AppHandle, Wry};
-use tauri_plugin_store::{with_store, StoreBuilder, StoreCollection};
+use tauri::AppHandle;
+use tauri_plugin_store::StoreExt;
+use chrono::{TimeZone, Utc};
 
 use core::panic;
 use std::error::Error;
@@ -14,40 +13,70 @@ use std::fs::create_dir_all;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
-use super::models::{DownloadInfo, Image};
+use super::models::{DownloadInfo, Wallpaper};
 
 const HOST_URL: &str = "https://oauth.reddit.com";
 const FETCH_LIMIT: i32 = 75;
 
 //fetch images
-pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Image>, Box<dyn Error>> {
+pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper>, Box<dyn Error>> {
     let url = format!(
         "{}/r/{}?limit={}&sort={}",
         HOST_URL, subreddit, FETCH_LIMIT, sort
     );
 
-    is_valid_token().await?;
-    let token = get_token().await?;
+    // Use the new v2 auth system to get a valid token
+    let token = get_reddit_token_for_provider().await
+        .map_err(|e| format!("Authentication failed: {}", e))?;
 
     let fetcher = create_http();
-    // Make HTTP request and get the responsemood
+    // Make HTTP request and get the response
     let response = fetcher.get(url).bearer_auth(token).send().await?;
     let response = response.json::<Value>().await?;
 
     // Extract image data from response
     let images = response["data"]["children"].as_array().unwrap();
 
-    let mut extracted: Vec<Image> = vec![];
-
-    // loop over each reddit post
+    let mut extracted: Vec<Wallpaper> = vec![];    // loop over each reddit post
     for image in images.iter() {
         let img_data = &image["data"];
         let img_url = &img_data["url"].as_str().unwrap();
 
         if img_url.contains("https://i.redd.it/") {
-            let image: Image = from_value(img_data.clone()).unwrap();
+            // Extract dimensions from preview.images if available
+            let (width, height) = if let Some(preview) = img_data.get("preview") {
+                if let Some(images_array) = preview.get("images") {
+                    if let Some(first_image) = images_array.get(0) {
+                        if let Some(source) = first_image.get("source") {
+                            let width = source.get("width").and_then(|w| w.as_u64()).map(|w| w as u32);
+                            let height = source.get("height").and_then(|h| h.as_u64()).map(|h| h as u32);
+                            (width, height)
+                        } else {
+                            (None, None)
+                        }
+                    } else {
+                        (None, None)
+                    }
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            };
 
-            //add the map to vector
+            // Extract subreddit name
+            let subreddit = img_data.get("subreddit").and_then(|s| s.as_str()).map(|s| s.to_string());            // Create Wallpaper struct with manual field assignment to include new fields
+            let image = Wallpaper {
+                id: img_data.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                url: img_url.to_string(),
+                title: img_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                author: img_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                width,
+                height,
+                subreddit,
+            };
+
+            //add the image to vector
             extracted.push(image);
         } else {
             continue;
@@ -63,8 +92,6 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     let url = format!("https://reddit.com/{}.json", image_id);
     println!("{url}");
 
-    // let mut img_map = Map::new();
-    // let mut info_map = Map::new();
     //get and setup fetcher
     let fetcher = create_http();
 
@@ -72,11 +99,48 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     let response = fetcher.get(url).send().await?;
     let response = response.json::<Value>().await?;
 
-    let image = &response[0]["data"]["children"][0]["data"];
+    let image_data = &response[0]["data"]["children"][0]["data"];
 
-    let info: ImageInfo = from_value(image.clone()).unwrap();
+    // Extract image dimensions from preview data if available
+    let (width, height) = if let Some(preview) = image_data.get("preview") {
+        if let Some(images) = preview.get("images").and_then(|i| i.as_array()) {
+            if let Some(first_image) = images.first() {
+                if let Some(source) = first_image.get("source") {
+                    let width = source.get("width").and_then(|w| w.as_i64()).map(|w| w as i32);
+                    let height = source.get("height").and_then(|h| h.as_i64()).map(|h| h as i32);
+                    (width, height)
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            }
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
 
-    // //somehow get the image size and resoultion in rust
+    // Manually construct ImageInfo with the additional fields
+    let info = ImageInfo {
+        url: image_data.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        permalink: format!("https://reddit.com{}", 
+            image_data.get("permalink").and_then(|v| v.as_str()).unwrap_or("")),
+        title: image_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        author: image_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        created: {
+            let created_utc = image_data.get("created_utc").and_then(|v| v.as_f64()).unwrap_or(0.0) * 1000.0;
+            let created_utc = chrono::Utc.timestamp_millis_opt(created_utc as i64).unwrap();
+            created_utc.to_rfc2822()
+        },
+        score: image_data.get("score").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+        subreddit_name_prefixed: image_data.get("subreddit_name_prefixed")
+            .and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        width,
+        height,
+    };
+
     println!("{:#?}", info);
 
     Ok(info)
@@ -86,38 +150,13 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
 pub async fn download(
     info: DownloadInfo,
     app_handle: AppHandle,
-    state: tauri::State<'_, StoreCollection<Wry>>,
-) -> Result<String, Box<dyn Error>> {
-
-    let path = PathBuf::from("settings.json");
-
-    // get the url from the store
-    let save_path_result = with_store(app_handle, state, path, |store| {
-        let path: String = match store.get("path") {
-            Some(path) => {
-                print!("he {}", path.to_string());
-                let string_path = path.as_str().expect("path is not a string").to_string();
-
-                string_path
-            }
-            None => panic!("this is not in the store"),
-        };
-        Ok(path)
-    });
-
-    println!("work");
-    let save_path = match save_path_result {
-        Ok(path) => {
-            let path_result = path.to_string();
-
-            Ok(path_result)
-        }
-        Err(error) => Err(error),
-    }
-    .unwrap();
+) -> Result<String, Box<dyn Error>> {    // Get the save path from the store using new v2 API
+    let store = app_handle.store("settings.json")?;
+    let save_path = store.get("path")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| "paperflow".to_string());
 
     let path_url = Path::new(&info.url);
-
     let save_path = PathBuf::from(&save_path);
 
     create_dir_all(&save_path)?;

@@ -4,11 +4,14 @@ use log::info;
 use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Image {
+pub struct Wallpaper {
     pub id: String,
     pub url: String,
     pub title: String,
     pub author: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub subreddit: Option<String>,
 }
 
 
@@ -16,15 +19,18 @@ pub struct Image {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ImageInfo {
-    url: String,
-    title: String,
-    author: String,
+    pub url: String,                // This will be the image URL
+    pub permalink: String,          // This will be the Reddit post URL
+    pub title: String,
+    pub author: String,
     #[serde(deserialize_with = "generate_date")]
-    created: String,
+    pub created: String,
     #[serde(rename(serialize = "karma"))]
-    score: i32,
+    pub score: i32,
     #[serde(rename(serialize = "subreddit"))]
-    subreddit_name_prefixed: String,
+    pub subreddit_name_prefixed: String,
+    pub width: Option<i32>,         // Image width
+    pub height: Option<i32>,        // Image height
 }
 
 pub fn generate_date<'de, D>(deserializer: D) -> Result<String, D::Error>

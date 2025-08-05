@@ -14,6 +14,8 @@ export type ConnectionObject = {
   connect: string;
   src: string;
   active: boolean;
+  sources?: string[];
+  username?: string;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -49,7 +51,8 @@ export const ConnectionSettingsEnum: ConnectionObject[] = [
   {
     name: "Reddit",
     src: redditImg,
-    connect: "start_reddit_login",
-    active: false
+    connect: "start_reddit_auth_v2",
+    active: false,
+    sources: ["wallpapers", "wallpaper", "EarthPorn", "CityPorn"]
   }
 ];

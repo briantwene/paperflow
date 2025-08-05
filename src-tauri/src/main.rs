@@ -4,14 +4,12 @@
 use std::collections::HashMap;
 
 use provider::{
-    models::{DownloadInfo, Image, ImageInfo},
+    models::{DownloadInfo, Wallpaper, ImageInfo},
     reddit::download,
 };
 use serde_json::Value;
-use tauri::{api::path, AppHandle, Manager, Wry};
-use tauri_plugin_log::LogTarget;
-use tauri_plugin_store::{StoreBuilder, StoreCollection};
-
+use tauri::{AppHandle, Manager};
+use tauri_plugin_store::StoreExt;
 
 use crate::auth::reddit::start_reddit_login;
 use auth::disconnect;
@@ -28,41 +26,43 @@ mod wallpaper;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())        .invoke_handler(tauri::generate_handler![
             fetch,
             view_img,
             start_reddit_login,
             auth_status,
-           disconnect,
-            reddit_download
+            disconnect,
+            reddit_download,
+            // New improved auth commands
+            auth::start_reddit_auth_v2,
+            auth::get_reddit_token_v2,
+            auth::revoke_reddit_auth_v2,
+            auth::check_reddit_auth_status_v2,
+            auth::get_reddit_user_info,
+            auth::demo_auth_flow_v2
         ])
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([LogTarget::LogDir, LogTarget::Stdout])
-                .build(),
-        )
         .setup(|app| {
             let mut defaults = HashMap::new();
+            
+            // Get the pictures directory using the new v2 API
+            let pictures_dir = app.path().picture_dir()
+                .map(|dir| dir.join("paperflow"))
+                .unwrap_or_else(|_| std::path::PathBuf::from("paperflow"));
+            
             defaults.insert(
                 "path".to_string(),
-                path::picture_dir()
-                    .unwrap()
-                    .join("paperflow")
-                    .to_str()
-                    .unwrap()
-                    .into(),
+                pictures_dir.to_str().unwrap().into(),
             );
 
             defaults.insert("theme".to_string(), "dark".into());
-            // create hashmap of defaults
-            let mut store = StoreBuilder::new(app.handle(), "settings.json".parse().unwrap())
+              // Create store using new v2 API
+            let store = app.store_builder("settings.json")
                 .defaults(defaults)
-                .build();
+                .build()?;
 
-            store.reset()?;
-
-            app.handle()
-                .plugin(tauri_plugin_store::Builder::default().store(store).build());
+            store.reset();
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -70,7 +70,7 @@ fn main() {
 }
 
 #[tauri::command]
-async fn fetch(subreddit: String, sort: String) -> Result<Vec<Image>, String> {
+async fn fetch(subreddit: String, sort: String) -> Result<Vec<Wallpaper>, String> {
     // get images
     match provider::reddit::get_images(subreddit, sort).await {
         Ok(images) => Ok(images),
@@ -97,8 +97,8 @@ fn auth_status() -> Value {
 
 
 #[tauri::command]
-async fn reddit_download(app_handle: AppHandle, state: tauri::State<'_, StoreCollection<Wry>>, info: DownloadInfo) -> Result<JsonValue, String> {
-    let result = download(info, app_handle, state).await.unwrap();
+async fn reddit_download(app_handle: AppHandle, info: DownloadInfo) -> Result<JsonValue, String> {
+    let result = download(info, app_handle).await.unwrap();
     println!("{}", result);
     return Ok(serde_json::json!({ "status": result }));
 }
