@@ -163,6 +163,7 @@ jobs:
             ${{ steps.changelog.outputs.changelog_content || 'See the assets below to download and install this version.' }}
             
             ## 📱 Installation
+
             
             Download the appropriate file for your operating system:
             - **Windows**: `.msi` installer
@@ -237,6 +238,7 @@ jobs:
                 const { execSync } = require('child_process');
                 
                 try {
+
                   console.log('Using preinstalled Tauri CLI for signature generation...');
                   const os = require('os');
                   
@@ -251,6 +253,7 @@ jobs:
                   }
                   
                   // Write private key to temp file
+
                   const keyPath = require('path').join(os.tmpdir(), 'tauri_private_key');
                   fs.writeFileSync(keyPath, privateKey.replace(/\\n/g, '\n'));
                   
@@ -277,6 +280,7 @@ jobs:
                         // Download the asset temporarily
                         const assetResponse = await fetch(asset.browser_download_url);
                         const assetBuffer = await assetResponse.arrayBuffer();
+
                         const path = require('path');
                         const assetPath = path.join(os.tmpdir(), asset.name);
                         fs.writeFileSync(assetPath, Buffer.from(assetBuffer));
@@ -284,6 +288,7 @@ jobs:
                         // Generate signature using Tauri CLI (pass password via env var)
                         const signatureCommand = `cargo tauri signer sign --private-key "${keyPath}" "${assetPath}"`;
                         const signature = execSync(signatureCommand, { encoding: 'utf-8', env: { ...process.env, TAURI_KEY_PASSWORD: keyPassword } }).trim();
+
                         
                         fallbackUpdater.platforms[platform] = {
                           signature: signature,
@@ -292,8 +297,9 @@ jobs:
                         
                         // Clean up temp file
                         fs.unlinkSync(assetPath);
+
                         console.log(`Generated signature for ${platform}`);
-                        
+          
                       } catch (sigError) {
                         console.error(`Failed to generate signature for ${platform}:`, sigError);
                         // Fallback to empty signature
@@ -338,6 +344,7 @@ jobs:
                       };
                     }
                   }
+
                 } finally {
                   try {
                     const fs = require('fs');
@@ -367,8 +374,7 @@ jobs:
                   }
                 } else {
                   await github.rest.gists.update({ gist_id: process.env.GIST_ID, ...updateBody });
-                }
-                
+                } 
                 console.log('Updated gist with fallback updater JSON (with signatures if available)');
                 return;
               }
