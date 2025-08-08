@@ -214,7 +214,7 @@ jobs:
                 console.log('Available assets:', assets.map(a => a.name));
                 console.error('No updater JSON found in release assets. Make sure Tauri updater is properly configured.');
                 
-                // Create a basic updater JSON manually if none exists
+                // Create a basic updater JSON manually if none exists, with signature generation
                 const fallbackUpdater = {
                   version: release.tag_name,
                   notes: body,
@@ -222,34 +222,114 @@ jobs:
                   platforms: {}
                 };
                 
-                // Add platform-specific download URLs
-                for (const asset of assets) {
-                  if (asset.name.includes('.msi')) {
-                    fallbackUpdater.platforms['windows-x86_64'] = {
-                      signature: '',
-                      url: asset.browser_download_url
-                    };
-                  } else if (asset.name.includes('.app.tar.gz')) {
-                    if (asset.name.includes('aarch64')) {
-                      fallbackUpdater.platforms['darwin-aarch64'] = {
+                // Install Rust and Tauri CLI for signature generation
+                const { execSync } = require('child_process');
+                
+                try {
+                  console.log('Setting up Tauri CLI for signature generation...');
+                  execSync('curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y', { stdio: 'inherit' });
+                  execSync('source ~/.cargo/env && cargo install tauri-cli@^2.0.0', { stdio: 'inherit' });
+                  
+                  // Set up private key for signing
+                  const fs = require('fs');
+                  const privateKey = process.env.TAURI_PRIVATE_KEY;
+                  const keyPassword = process.env.TAURI_KEY_PASSWORD;
+                  
+                  if (!privateKey || !keyPassword) {
+                    console.log('Private key or password not available, generating signatures without validation');
+                    throw new Error('Missing signing credentials');
+                  }
+                  
+                  // Write private key to temp file
+                  const keyPath = '/tmp/tauri_private_key';
+                  fs.writeFileSync(keyPath, privateKey.replace(/\\n/g, '\n'));
+                  
+                  // Add platform-specific download URLs and generate signatures
+                  for (const asset of assets) {
+                    let platform = null;
+                    
+                    if (asset.name.includes('.msi')) {
+                      platform = 'windows-x86_64';
+                    } else if (asset.name.includes('.app.tar.gz')) {
+                      if (asset.name.includes('aarch64')) {
+                        platform = 'darwin-aarch64';
+                      } else if (asset.name.includes('x64')) {
+                        platform = 'darwin-x86_64';
+                      }
+                    } else if (asset.name.includes('.AppImage')) {
+                      platform = 'linux-x86_64';
+                    }
+                    
+                    if (platform) {
+                      console.log(`Generating signature for ${platform} (${asset.name})`);
+                      
+                      try {
+                        // Download the asset temporarily
+                        const assetResponse = await fetch(asset.browser_download_url);
+                        const assetBuffer = await assetResponse.arrayBuffer();
+                        const assetPath = `/tmp/${asset.name}`;
+                        fs.writeFileSync(assetPath, Buffer.from(assetBuffer));
+                        
+                        // Generate signature using Tauri CLI
+                        const signatureCommand = `source ~/.cargo/env && echo "${keyPassword}" | cargo tauri signer sign --private-key "${keyPath}" "${assetPath}"`;
+                        const signature = execSync(signatureCommand, { encoding: 'utf-8' }).trim();
+                        
+                        fallbackUpdater.platforms[platform] = {
+                          signature: signature,
+                          url: asset.browser_download_url
+                        };
+                        
+                        // Clean up temp file
+                        fs.unlinkSync(assetPath);
+                        console.log(`Generated signature for ${platform}: ${signature.substring(0, 20)}...`);
+                        
+                      } catch (sigError) {
+                        console.error(`Failed to generate signature for ${platform}:`, sigError);
+                        // Fallback to empty signature
+                        fallbackUpdater.platforms[platform] = {
+                          signature: '',
+                          url: asset.browser_download_url
+                        };
+                      }
+                    }
+                  }
+                  
+                  // Clean up private key
+                  fs.unlinkSync(keyPath);
+                  
+                } catch (setupError) {
+                  console.error('Failed to set up signature generation:', setupError);
+                  console.log('Falling back to unsigned assets');
+                  
+                  // Add platform-specific download URLs without signatures
+                  for (const asset of assets) {
+                    if (asset.name.includes('.msi')) {
+                      fallbackUpdater.platforms['windows-x86_64'] = {
                         signature: '',
                         url: asset.browser_download_url
                       };
-                    } else if (asset.name.includes('x64')) {
-                      fallbackUpdater.platforms['darwin-x86_64'] = {
+                    } else if (asset.name.includes('.app.tar.gz')) {
+                      if (asset.name.includes('aarch64')) {
+                        fallbackUpdater.platforms['darwin-aarch64'] = {
+                          signature: '',
+                          url: asset.browser_download_url
+                        };
+                      } else if (asset.name.includes('x64')) {
+                        fallbackUpdater.platforms['darwin-x86_64'] = {
+                          signature: '',
+                          url: asset.browser_download_url
+                        };
+                      }
+                    } else if (asset.name.includes('.AppImage')) {
+                      fallbackUpdater.platforms['linux-x86_64'] = {
                         signature: '',
                         url: asset.browser_download_url
                       };
                     }
-                  } else if (asset.name.includes('.AppImage')) {
-                    fallbackUpdater.platforms['linux-x86_64'] = {
-                      signature: '',
-                      url: asset.browser_download_url
-                    };
                   }
                 }
                 
-                // Update gist with fallback data
+                // Update gist with fallback data (now with signatures if available)
                 await github.rest.gists.update({
                   gist_id: process.env.GIST_ID,
                   files: {
@@ -259,7 +339,7 @@ jobs:
                   }
                 });
                 
-                console.log('Updated gist with fallback updater JSON');
+                console.log('Updated gist with fallback updater JSON (with signatures if available)');
                 return;
               }
 
@@ -292,16 +372,6 @@ jobs:
               });
 
               console.log('Successfully updated updater gist with proper JSON');
-            } catch (error) {
-              console.error('Failed to update gist:', error);
-              throw error;
-            }
-                    content: JSON.stringify(updaterJson, null, 2)
-                  }
-                }
-              });
-
-              console.log('Successfully updated updater gist');
             } catch (error) {
               console.error('Failed to update gist:', error);
               throw error;
