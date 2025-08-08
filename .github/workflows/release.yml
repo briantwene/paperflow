@@ -102,7 +102,7 @@ jobs:
           fi
 
       - name: Build and Release with Tauri
-        uses: tauri-apps/tauri-action@v0.5.22
+        uses: tauri-apps/tauri-action@v0.5.16
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -114,7 +114,6 @@ jobs:
             ${{ steps.changelog.outputs.changelog_content || 'See the assets below to download and install this version.' }}
 
             ## 📱 Installation
-
 
             Download the appropriate file for your operating system:
             - **Windows**: `.msi` installer
