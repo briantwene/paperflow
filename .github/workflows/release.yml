@@ -115,6 +115,7 @@ jobs:
 
             ## 📱 Installation
 
+
             Download the appropriate file for your operating system:
             - **Windows**: `.msi` installer
             - **macOS**: `.dmg` file
@@ -129,7 +130,6 @@ jobs:
           updaterJsonPreferNsis: false
           updaterJsonKeepUniversal: false
           args: ${{ matrix.args }}
-
 
   sync-develop:
     name: Sync main to develop
