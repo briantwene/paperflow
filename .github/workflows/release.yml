@@ -184,12 +184,23 @@ jobs:
     name: Update Updater Gist
     needs: build-and-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: always() && needs.build-and-release.result == 'success'
     steps:
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli@^2.0.0
+
       - name: Update updater.json gist
         uses: actions/github-script@v7
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -226,9 +237,8 @@ jobs:
                 const { execSync } = require('child_process');
                 
                 try {
-                  console.log('Setting up Tauri CLI for signature generation...');
-                  execSync('curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y', { stdio: 'inherit' });
-                  execSync('source ~/.cargo/env && cargo install tauri-cli@^2.0.0', { stdio: 'inherit' });
+                  console.log('Using preinstalled Tauri CLI for signature generation...');
+                  const os = require('os');
                   
                   // Set up private key for signing
                   const fs = require('fs');
@@ -241,7 +251,7 @@ jobs:
                   }
                   
                   // Write private key to temp file
-                  const keyPath = '/tmp/tauri_private_key';
+                  const keyPath = require('path').join(os.tmpdir(), 'tauri_private_key');
                   fs.writeFileSync(keyPath, privateKey.replace(/\\n/g, '\n'));
                   
                   // Add platform-specific download URLs and generate signatures
@@ -267,12 +277,13 @@ jobs:
                         // Download the asset temporarily
                         const assetResponse = await fetch(asset.browser_download_url);
                         const assetBuffer = await assetResponse.arrayBuffer();
-                        const assetPath = `/tmp/${asset.name}`;
+                        const path = require('path');
+                        const assetPath = path.join(os.tmpdir(), asset.name);
                         fs.writeFileSync(assetPath, Buffer.from(assetBuffer));
                         
-                        // Generate signature using Tauri CLI
-                        const signatureCommand = `source ~/.cargo/env && echo "${keyPassword}" | cargo tauri signer sign --private-key "${keyPath}" "${assetPath}"`;
-                        const signature = execSync(signatureCommand, { encoding: 'utf-8' }).trim();
+                        // Generate signature using Tauri CLI (pass password via env var)
+                        const signatureCommand = `cargo tauri signer sign --private-key "${keyPath}" "${assetPath}"`;
+                        const signature = execSync(signatureCommand, { encoding: 'utf-8', env: { ...process.env, TAURI_KEY_PASSWORD: keyPassword } }).trim();
                         
                         fallbackUpdater.platforms[platform] = {
                           signature: signature,
@@ -281,7 +292,7 @@ jobs:
                         
                         // Clean up temp file
                         fs.unlinkSync(assetPath);
-                        console.log(`Generated signature for ${platform}: ${signature.substring(0, 20)}...`);
+                        console.log(`Generated signature for ${platform}`);
                         
                       } catch (sigError) {
                         console.error(`Failed to generate signature for ${platform}:`, sigError);
@@ -327,17 +338,36 @@ jobs:
                       };
                     }
                   }
+                } finally {
+                  try {
+                    const fs = require('fs');
+                    if (typeof keyPath === 'string' && fs.existsSync(keyPath)) {
+                      fs.unlinkSync(keyPath);
+                    }
+                  } catch {}
                 }
                 
                 // Update gist with fallback data (now with signatures if available)
-                await github.rest.gists.update({
-                  gist_id: process.env.GIST_ID,
-                  files: {
-                    "updater.json": {
-                      content: JSON.stringify(fallbackUpdater, null, 2)
-                    }
+                const updateBody = {
+                  files: { "updater.json": { content: JSON.stringify(fallbackUpdater, null, 2) } }
+                };
+                if (process.env.GIST_TOKEN) {
+                  const res = await fetch(`https://api.github.com/gists/${process.env.GIST_ID}` , {
+                    method: 'PATCH',
+                    headers: {
+                      'Authorization': `token ${process.env.GIST_TOKEN}`,
+                      'Accept': 'application/vnd.github+json',
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateBody)
+                  });
+                  if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`Failed to update gist via PAT: ${res.status} ${txt}`);
                   }
-                });
+                } else {
+                  await github.rest.gists.update({ gist_id: process.env.GIST_ID, ...updateBody });
+                }
                 
                 console.log('Updated gist with fallback updater JSON (with signatures if available)');
                 return;
@@ -362,14 +392,26 @@ jobs:
               updaterJson.notes = cleanNotes || 'New version available';
 
               // Update the gist
-              await github.rest.gists.update({
-                gist_id: process.env.GIST_ID,
-                files: {
-                  "updater.json": {
-                    content: JSON.stringify(updaterJson, null, 2)
-                  }
+              const updateBody = {
+                files: { "updater.json": { content: JSON.stringify(updaterJson, null, 2) } }
+              };
+              if (process.env.GIST_TOKEN) {
+                const res = await fetch(`https://api.github.com/gists/${process.env.GIST_ID}` , {
+                  method: 'PATCH',
+                  headers: {
+                    'Authorization': `token ${process.env.GIST_TOKEN}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(updateBody)
+                });
+                if (!res.ok) {
+                  const txt = await res.text();
+                  throw new Error(`Failed to update gist via PAT: ${res.status} ${txt}`);
                 }
-              });
+              } else {
+                await github.rest.gists.update({ gist_id: process.env.GIST_ID, ...updateBody });
+              }
 
               console.log('Successfully updated updater gist with proper JSON');
             } catch (error) {
