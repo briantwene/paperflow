@@ -1,27 +1,19 @@
-# Streamlined Release Workflow for Tauri v2 + Changesets
-# Combines semantic versioning, building, and updater management
 name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  # Step 1: Handle semantic versioning with Changesets
   release-please:
     name: Create Release PR or Publish
     runs-on: ubuntu-latest
-    outputs:
-      published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
-      hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # This makes Action fetch all Git history so Changesets can generate changelogs
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -40,51 +32,27 @@ jobs:
           publish: npm run changeset:tag
           commit: "chore: version packages"
           title: "chore: version packages"
-          createGithubReleases: false # We'll handle this in the build job
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract changelog for this version
-        id: changelog
-        if: steps.changesets.outputs.published == 'true'
-        run: |
-          # Get the version that was just published
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=v$VERSION" >> $GITHUB_OUTPUT
-          
-          # Extract changelog for this version from CHANGELOG.md
-          if [ -f "CHANGELOG.md" ]; then
-            # Get content between the latest version header and the next one
-            CHANGELOG=$(awk "/^## $VERSION/,/^## [0-9]/ { if (!/^## [0-9]/ || /^## $VERSION/) print }" CHANGELOG.md | head -n -1 | tail -n +2)
-            echo "Found changelog content for version $VERSION"
-            # Save to file to handle multiline content
-            echo "$CHANGELOG" > /tmp/changelog.md
-            echo "changelog_file=/tmp/changelog.md" >> $GITHUB_OUTPUT
-          else
-            echo "No CHANGELOG.md found"
-            echo "changelog_file=" >> $GITHUB_OUTPUT
-          fi
-
-  # Step 2: Build and release Tauri app (only if there's a new version)
   build-and-release:
     name: Build Tauri App
     needs: release-please
-    if: needs.release-please.outputs.hasChangesets == 'false'
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
+          - platform: macos-latest
             args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
+          - platform: macos-latest
             args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
+          - platform: ubuntu-22.04
             args: ''
-          - platform: 'windows-latest'
+          - platform: windows-latest
             args: ''
-
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -110,44 +78,27 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Get changelog content
+      - name: Get changelog content (Ubuntu only)
         id: changelog
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          # Get the current version
           VERSION=$(node -p "require('./package.json').version")
-          echo "Current version: $VERSION"
-          
-          # Extract changelog for this version if CHANGELOG.md exists
-          if [ -f "CHANGELOG.md" ]; then
-            echo "Found CHANGELOG.md, extracting content for version $VERSION"
-            # Extract content between this version and the next
-            CHANGELOG_CONTENT=$(awk -v version="$VERSION" '
-              /^## / { 
-                if ($0 ~ version) { 
-                  found=1; 
-                  next 
-                } else if (found) { 
-                  exit 
-                } 
-              } 
+          if [ -f CHANGELOG.md ]; then
+            CONTENT=$(awk -v version="$VERSION" '
+              /^## / {
+                if ($0 ~ version) { found=1; next } else if (found) { exit }
+              }
               found && !/^## / { print }
             ' CHANGELOG.md | sed '/^$/d' | head -20)
-            
-            if [ -n "$CHANGELOG_CONTENT" ]; then
+            if [ -n "$CONTENT" ]; then
               echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-              echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+              echo "$CONTENT" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             else
-              echo "changelog_content=## What's New in v$VERSION" >> $GITHUB_OUTPUT
-              echo "" >> $GITHUB_OUTPUT
-              echo "See the assets below to download and install this version." >> $GITHUB_OUTPUT
+              echo "changelog_content=See the assets below to download and install this version." >> $GITHUB_OUTPUT
             fi
           else
-            echo "No CHANGELOG.md found, using default content"
-            echo "changelog_content=## What's New" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "See the assets below to download and install this version." >> $GITHUB_OUTPUT
+            echo "changelog_content=See the assets below to download and install this version." >> $GITHUB_OUTPUT
           fi
 
       - name: Build and Release with Tauri
@@ -161,17 +112,17 @@ jobs:
           releaseName: 'PaperFlow v__VERSION__'
           releaseBody: |
             ${{ steps.changelog.outputs.changelog_content || 'See the assets below to download and install this version.' }}
-            
+
             ## 📱 Installation
 
-            
+
             Download the appropriate file for your operating system:
             - **Windows**: `.msi` installer
-            - **macOS**: `.dmg` file  
+            - **macOS**: `.dmg` file
             - **Linux**: `.AppImage` or `.deb` package
-            
+
             ## 🔄 Auto-Updates
-            
+
             If you have PaperFlow already installed, the app will automatically check for updates and notify you when this version is available.
           releaseDraft: false
           prerelease: false
@@ -180,257 +131,11 @@ jobs:
           updaterJsonKeepUniversal: false
           args: ${{ matrix.args }}
 
-  # Step 3: Update the GitHub Gist for auto-updater
-  update-gist:
-    name: Update Updater Gist
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    if: always() && needs.build-and-release.result == 'success'
-    steps:
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli@^2.0.0
-
-      - name: Update updater.json gist
-        uses: actions/github-script@v7
-        env:
-          GIST_ID: ${{ secrets.GIST_ID }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            try {
-              const { data: release } = await github.rest.repos.getLatestRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo
-              });
-
-              const { name, body, published_at, assets } = release;
-              console.log(`Processing release: ${name}`);
-              console.log(`Found ${assets.length} assets`);
-              
-              // Look for updater JSON file with multiple possible names
-              const updaterAsset = assets.find(asset => 
-                asset.name.includes('latest.json') || 
-                asset.name.includes('updater.json') ||
-                asset.name.endsWith('.json')
-              );
-              
-              if (!updaterAsset) {
-                console.log('Available assets:', assets.map(a => a.name));
-                console.error('No updater JSON found in release assets. Make sure Tauri updater is properly configured.');
-                
-                // Create a basic updater JSON manually if none exists, with signature generation
-                const fallbackUpdater = {
-                  version: release.tag_name,
-                  notes: body,
-                  pub_date: published_at,
-                  platforms: {}
-                };
-                
-                // Install Rust and Tauri CLI for signature generation
-                const { execSync } = require('child_process');
-                
-                try {
-
-                  console.log('Using preinstalled Tauri CLI for signature generation...');
-                  const os = require('os');
-                  
-                  // Set up private key for signing
-                  const fs = require('fs');
-                  const privateKey = process.env.TAURI_PRIVATE_KEY;
-                  const keyPassword = process.env.TAURI_KEY_PASSWORD;
-                  
-                  if (!privateKey || !keyPassword) {
-                    console.log('Private key or password not available, generating signatures without validation');
-                    throw new Error('Missing signing credentials');
-                  }
-                  
-                  // Write private key to temp file
-
-                  const keyPath = require('path').join(os.tmpdir(), 'tauri_private_key');
-                  fs.writeFileSync(keyPath, privateKey.replace(/\\n/g, '\n'));
-                  
-                  // Add platform-specific download URLs and generate signatures
-                  for (const asset of assets) {
-                    let platform = null;
-                    
-                    if (asset.name.includes('.msi')) {
-                      platform = 'windows-x86_64';
-                    } else if (asset.name.includes('.app.tar.gz')) {
-                      if (asset.name.includes('aarch64')) {
-                        platform = 'darwin-aarch64';
-                      } else if (asset.name.includes('x64')) {
-                        platform = 'darwin-x86_64';
-                      }
-                    } else if (asset.name.includes('.AppImage')) {
-                      platform = 'linux-x86_64';
-                    }
-                    
-                    if (platform) {
-                      console.log(`Generating signature for ${platform} (${asset.name})`);
-                      
-                      try {
-                        // Download the asset temporarily
-                        const assetResponse = await fetch(asset.browser_download_url);
-                        const assetBuffer = await assetResponse.arrayBuffer();
-
-                        const path = require('path');
-                        const assetPath = path.join(os.tmpdir(), asset.name);
-                        fs.writeFileSync(assetPath, Buffer.from(assetBuffer));
-                        
-                        // Generate signature using Tauri CLI (pass password via env var)
-                        const signatureCommand = `cargo tauri signer sign --private-key "${keyPath}" "${assetPath}"`;
-                        const signature = execSync(signatureCommand, { encoding: 'utf-8', env: { ...process.env, TAURI_KEY_PASSWORD: keyPassword } }).trim();
-
-                        
-                        fallbackUpdater.platforms[platform] = {
-                          signature: signature,
-                          url: asset.browser_download_url
-                        };
-                        
-                        // Clean up temp file
-                        fs.unlinkSync(assetPath);
-
-                        console.log(`Generated signature for ${platform}`);
-          
-                      } catch (sigError) {
-                        console.error(`Failed to generate signature for ${platform}:`, sigError);
-                        // Fallback to empty signature
-                        fallbackUpdater.platforms[platform] = {
-                          signature: '',
-                          url: asset.browser_download_url
-                        };
-                      }
-                    }
-                  }
-                  
-                  // Clean up private key
-                  fs.unlinkSync(keyPath);
-                  
-                } catch (setupError) {
-                  console.error('Failed to set up signature generation:', setupError);
-                  console.log('Falling back to unsigned assets');
-                  
-                  // Add platform-specific download URLs without signatures
-                  for (const asset of assets) {
-                    if (asset.name.includes('.msi')) {
-                      fallbackUpdater.platforms['windows-x86_64'] = {
-                        signature: '',
-                        url: asset.browser_download_url
-                      };
-                    } else if (asset.name.includes('.app.tar.gz')) {
-                      if (asset.name.includes('aarch64')) {
-                        fallbackUpdater.platforms['darwin-aarch64'] = {
-                          signature: '',
-                          url: asset.browser_download_url
-                        };
-                      } else if (asset.name.includes('x64')) {
-                        fallbackUpdater.platforms['darwin-x86_64'] = {
-                          signature: '',
-                          url: asset.browser_download_url
-                        };
-                      }
-                    } else if (asset.name.includes('.AppImage')) {
-                      fallbackUpdater.platforms['linux-x86_64'] = {
-                        signature: '',
-                        url: asset.browser_download_url
-                      };
-                    }
-                  }
-
-                } finally {
-                  try {
-                    const fs = require('fs');
-                    if (typeof keyPath === 'string' && fs.existsSync(keyPath)) {
-                      fs.unlinkSync(keyPath);
-                    }
-                  } catch {}
-                }
-                
-                // Update gist with fallback data (now with signatures if available)
-                const updateBody = {
-                  files: { "updater.json": { content: JSON.stringify(fallbackUpdater, null, 2) } }
-                };
-                if (process.env.GIST_TOKEN) {
-                  const res = await fetch(`https://api.github.com/gists/${process.env.GIST_ID}` , {
-                    method: 'PATCH',
-                    headers: {
-                      'Authorization': `token ${process.env.GIST_TOKEN}`,
-                      'Accept': 'application/vnd.github+json',
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateBody)
-                  });
-                  if (!res.ok) {
-                    const txt = await res.text();
-                    throw new Error(`Failed to update gist via PAT: ${res.status} ${txt}`);
-                  }
-                } else {
-                  await github.rest.gists.update({ gist_id: process.env.GIST_ID, ...updateBody });
-                } 
-                console.log('Updated gist with fallback updater JSON (with signatures if available)');
-                return;
-              }
-
-              console.log(`Found updater asset: ${updaterAsset.name}`);
-              
-              // Download the updater JSON
-              const response = await fetch(updaterAsset.browser_download_url);
-              const updaterJson = await response.json();
-
-              // Clean up release notes - preserve the changesets formatting
-              let cleanNotes = body;
-              if (cleanNotes) {
-                // Remove GitHub PR references but keep the main content
-                cleanNotes = cleanNotes
-                  .replace(/\(#\d+\)/g, '') // Remove (#123) references
-                  .replace(/^[\s\r\n]+|[\s\r\n]+$/g, '') // Trim whitespace
-                  .trim();
-              }
-              
-              updaterJson.notes = cleanNotes || 'New version available';
-
-              // Update the gist
-              const updateBody = {
-                files: { "updater.json": { content: JSON.stringify(updaterJson, null, 2) } }
-              };
-              if (process.env.GIST_TOKEN) {
-                const res = await fetch(`https://api.github.com/gists/${process.env.GIST_ID}` , {
-                  method: 'PATCH',
-                  headers: {
-                    'Authorization': `token ${process.env.GIST_TOKEN}`,
-                    'Accept': 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify(updateBody)
-                });
-                if (!res.ok) {
-                  const txt = await res.text();
-                  throw new Error(`Failed to update gist via PAT: ${res.status} ${txt}`);
-                }
-              } else {
-                await github.rest.gists.update({ gist_id: process.env.GIST_ID, ...updateBody });
-              }
-
-              console.log('Successfully updated updater gist with proper JSON');
-            } catch (error) {
-              console.error('Failed to update gist:', error);
-              throw error;
-            }
-
-  # Step 4: Sync main back to develop branch (if you use gitflow)
   sync-develop:
     name: Sync main to develop
-    needs: update-gist
+    needs: build-and-release
     runs-on: ubuntu-latest
-    if: always() && needs.update-gist.result == 'success'
+    if: always() && needs.build-and-release.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
