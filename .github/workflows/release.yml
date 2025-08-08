@@ -44,6 +44,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract changelog for this version
+        id: changelog
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          # Get the version that was just published
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
+          
+          # Extract changelog for this version from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Get content between the latest version header and the next one
+            CHANGELOG=$(awk "/^## $VERSION/,/^## [0-9]/ { if (!/^## [0-9]/ || /^## $VERSION/) print }" CHANGELOG.md | head -n -1 | tail -n +2)
+            echo "Found changelog content for version $VERSION"
+            # Save to file to handle multiline content
+            echo "$CHANGELOG" > /tmp/changelog.md
+            echo "changelog_file=/tmp/changelog.md" >> $GITHUB_OUTPUT
+          else
+            echo "No CHANGELOG.md found"
+            echo "changelog_file=" >> $GITHUB_OUTPUT
+          fi
+
   # Step 2: Build and release Tauri app (only if there's a new version)
   build-and-release:
     name: Build Tauri App
@@ -89,6 +110,46 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Get changelog content
+        id: changelog
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          # Get the current version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $VERSION"
+          
+          # Extract changelog for this version if CHANGELOG.md exists
+          if [ -f "CHANGELOG.md" ]; then
+            echo "Found CHANGELOG.md, extracting content for version $VERSION"
+            # Extract content between this version and the next
+            CHANGELOG_CONTENT=$(awk -v version="$VERSION" '
+              /^## / { 
+                if ($0 ~ version) { 
+                  found=1; 
+                  next 
+                } else if (found) { 
+                  exit 
+                } 
+              } 
+              found && !/^## / { print }
+            ' CHANGELOG.md | sed '/^$/d' | head -20)
+            
+            if [ -n "$CHANGELOG_CONTENT" ]; then
+              echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "changelog_content=## What's New in v$VERSION" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "See the assets below to download and install this version." >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No CHANGELOG.md found, using default content"
+            echo "changelog_content=## What's New" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "See the assets below to download and install this version." >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and Release with Tauri
         uses: tauri-apps/tauri-action@v0.5.22
         env:
@@ -99,14 +160,23 @@ jobs:
           tagName: 'v__VERSION__'
           releaseName: 'PaperFlow v__VERSION__'
           releaseBody: |
-            See the assets below to download and install this version.
+            ${{ steps.changelog.outputs.changelog_content || 'See the assets below to download and install this version.' }}
             
-            ## What's Changed
-            ${{ github.event.head_commit.message }}
+            ## 📱 Installation
+            
+            Download the appropriate file for your operating system:
+            - **Windows**: `.msi` installer
+            - **macOS**: `.dmg` file  
+            - **Linux**: `.AppImage` or `.deb` package
+            
+            ## 🔄 Auto-Updates
+            
+            If you have PaperFlow already installed, the app will automatically check for updates and notify you when this version is available.
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
           updaterJsonPreferNsis: false
+          updaterJsonKeepUniversal: false
           args: ${{ matrix.args }}
 
   # Step 3: Update the GitHub Gist for auto-updater
@@ -130,28 +200,102 @@ jobs:
               });
 
               const { name, body, published_at, assets } = release;
+              console.log(`Processing release: ${name}`);
+              console.log(`Found ${assets.length} assets`);
               
-              // Find the updater JSON file in the release assets
-              const updaterAsset = assets.find(asset => asset.name.includes('latest.json'));
+              // Look for updater JSON file with multiple possible names
+              const updaterAsset = assets.find(asset => 
+                asset.name.includes('latest.json') || 
+                asset.name.includes('updater.json') ||
+                asset.name.endsWith('.json')
+              );
               
               if (!updaterAsset) {
-                console.log('No updater JSON found in release assets');
+                console.log('Available assets:', assets.map(a => a.name));
+                console.error('No updater JSON found in release assets. Make sure Tauri updater is properly configured.');
+                
+                // Create a basic updater JSON manually if none exists
+                const fallbackUpdater = {
+                  version: release.tag_name,
+                  notes: body,
+                  pub_date: published_at,
+                  platforms: {}
+                };
+                
+                // Add platform-specific download URLs
+                for (const asset of assets) {
+                  if (asset.name.includes('.msi')) {
+                    fallbackUpdater.platforms['windows-x86_64'] = {
+                      signature: '',
+                      url: asset.browser_download_url
+                    };
+                  } else if (asset.name.includes('.app.tar.gz')) {
+                    if (asset.name.includes('aarch64')) {
+                      fallbackUpdater.platforms['darwin-aarch64'] = {
+                        signature: '',
+                        url: asset.browser_download_url
+                      };
+                    } else if (asset.name.includes('x64')) {
+                      fallbackUpdater.platforms['darwin-x86_64'] = {
+                        signature: '',
+                        url: asset.browser_download_url
+                      };
+                    }
+                  } else if (asset.name.includes('.AppImage')) {
+                    fallbackUpdater.platforms['linux-x86_64'] = {
+                      signature: '',
+                      url: asset.browser_download_url
+                    };
+                  }
+                }
+                
+                // Update gist with fallback data
+                await github.rest.gists.update({
+                  gist_id: process.env.GIST_ID,
+                  files: {
+                    "updater.json": {
+                      content: JSON.stringify(fallbackUpdater, null, 2)
+                    }
+                  }
+                });
+                
+                console.log('Updated gist with fallback updater JSON');
                 return;
               }
 
+              console.log(`Found updater asset: ${updaterAsset.name}`);
+              
               // Download the updater JSON
-              const { data: updaterData } = await github.request(updaterAsset.browser_download_url);
-              const updaterJson = JSON.parse(new TextDecoder().decode(updaterData));
+              const response = await fetch(updaterAsset.browser_download_url);
+              const updaterJson = await response.json();
 
-              // Clean up release notes
-              const cleanNotes = body.replace(/ *\([^)]*\)|#|\) */g, '').trim();
-              updaterJson.notes = cleanNotes;
+              // Clean up release notes - preserve the changesets formatting
+              let cleanNotes = body;
+              if (cleanNotes) {
+                // Remove GitHub PR references but keep the main content
+                cleanNotes = cleanNotes
+                  .replace(/\(#\d+\)/g, '') // Remove (#123) references
+                  .replace(/^[\s\r\n]+|[\s\r\n]+$/g, '') // Trim whitespace
+                  .trim();
+              }
+              
+              updaterJson.notes = cleanNotes || 'New version available';
 
               // Update the gist
               await github.rest.gists.update({
                 gist_id: process.env.GIST_ID,
                 files: {
                   "updater.json": {
+                    content: JSON.stringify(updaterJson, null, 2)
+                  }
+                }
+              });
+
+              console.log('Successfully updated updater gist with proper JSON');
+            } catch (error) {
+              console.error('Failed to update gist:', error);
+              throw error;
+            }
                     content: JSON.stringify(updaterJson, null, 2)
                   }
                 }
