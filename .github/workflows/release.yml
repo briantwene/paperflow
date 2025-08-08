@@ -130,7 +130,6 @@ jobs:
           updaterJsonKeepUniversal: false
           args: ${{ matrix.args }}
 
-
   sync-develop:
     name: Sync main to develop
     needs: build-and-release
