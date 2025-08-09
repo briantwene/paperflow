@@ -48,7 +48,8 @@
       "frameworks": [],
       "minimumSystemVersion": "",
       "exceptionDomain": ""
-    }
+    },
+    "createUpdaterArtifacts": true
   },
   "plugins": {
     "updater": {
