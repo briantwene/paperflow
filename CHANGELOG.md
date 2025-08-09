@@ -1,5 +1,10 @@
 # paperflow
 
+## 2.0.1
+
+### Patch Changes
+
+- 59a5c48: Added color palette feature
 
 ## 2.0.0
 
@@ -45,7 +50,6 @@
 
 - e798a52: redesign view page
 - e798a52: Fixed an issue where the app would crash due to settings not being loaded correctly
-
 
 ## 1.0.0
 
