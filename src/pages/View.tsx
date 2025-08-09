@@ -25,6 +25,7 @@ import { ImageViewer } from "@/components/ImageViewer";
 import { ImageView } from "@/utils/models";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "@/hooks/use-toast";
+import { ColorPalette } from "@/components/ColorPalette";
 
 const View = () => {
   const id = useParams({
@@ -185,6 +186,7 @@ const View = () => {
               </Button>
             </CardFooter>
           </Card>
+          <ColorPalette imageUrl={image.url} imageTitle={image.title} />
         </div>
       </div>
     );
