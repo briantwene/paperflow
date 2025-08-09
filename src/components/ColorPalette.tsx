@@ -13,15 +13,19 @@ interface ColorPaletteProps {
 export const ColorPalette = ({ imageUrl, imageTitle }: ColorPaletteProps) => {
   const [colors, setColors] = useState<ColorInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   const extractColors = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const extractedColors = await extractColorsFromImage(imageUrl);
       setColors(extractedColors);
     } catch (error) {
       console.error("Color extraction failed:", error);
+      setError("Unable to extract colors from this image");
+      setColors([]); // Clear any previous colors
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +56,24 @@ export const ColorPalette = ({ imageUrl, imageTitle }: ColorPaletteProps) => {
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="w-full h-12 rounded" />
             ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Color Palette</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Some images may not be accessible due to CORS restrictions
+            </p>
           </div>
         </CardContent>
       </Card>

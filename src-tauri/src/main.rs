@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::collections::HashMap;
+use base64::Engine;
 
 use provider::{
     models::{DownloadInfo, Wallpaper, ImageInfo},
@@ -35,6 +36,7 @@ fn main() {
             auth_status,
             disconnect,
             reddit_download,
+            download_image_as_base64,
             // New improved auth commands
             auth::start_reddit_auth_v2,
             auth::get_reddit_token_v2,
@@ -101,5 +103,33 @@ async fn reddit_download(app_handle: AppHandle, info: DownloadInfo) -> Result<Js
     let result = download(info, app_handle).await.unwrap();
     println!("{}", result);
     return Ok(serde_json::json!({ "status": result }));
+}
+
+#[tauri::command]
+async fn download_image_as_base64(url: String) -> Result<String, String> {
+    println!("Downloading image for color extraction: {}", url);
+    
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                match response.bytes().await {
+                    Ok(bytes) => {
+                        let base64_string = base64::engine::general_purpose::STANDARD.encode(&bytes);
+                        Ok(base64_string)
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to read response bytes: {}", e);
+                        Err(format!("Failed to read image data: {}", e))
+                    }
+                }
+            } else {
+                Err(format!("HTTP error: {}", response.status()))
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to download image: {}", e);
+            Err(format!("Failed to download image: {}", e))
+        }
+    }
 }
 
