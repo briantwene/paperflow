@@ -1,0 +1,6 @@
+{
+  "rust-analyzer.linkedProjects": [
+    ".\\src-tauri\\Cargo.toml"
+  ],
+  "postman.settings.dotenv-detection-notification-visibility": false
+}
