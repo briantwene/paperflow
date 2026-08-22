@@ -1,13 +1,12 @@
+use chrono::{Duration, TimeZone, Utc};
 use keyring::Entry;
 use serde_json::json;
 use std::error::Error;
-use chrono::{Duration, TimeZone, Utc};
-
 
 // a way for the frontend to show the status of the user auth
 
 pub fn get_auth_status(providers: Vec<&str>) -> serde_json::Value {
-    let service_name = "PaperFlow";  // Your service name
+    let service_name = "PaperFlow"; // Your service name
     let mut connections = serde_json::Map::new();
 
     for provider in providers {
@@ -19,8 +18,6 @@ pub fn get_auth_status(providers: Vec<&str>) -> serde_json::Value {
         let token_keyring = Entry::new(&service_name, &token_key).unwrap();
         let expiry_keyring = Entry::new(&service_name, &expiry_key).unwrap();
         let refresh_keyring = Entry::new(&service_name, &refresh_key).unwrap();
-
-      
 
         let access_token = token_keyring.get_password().is_ok();
         let has_refresh_token = refresh_keyring.get_password().is_ok();

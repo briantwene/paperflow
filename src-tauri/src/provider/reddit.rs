@@ -1,13 +1,12 @@
 use crate::auth::get_reddit_token_for_provider;
-use crate::utils::{create_http, sanitize_filename};
 use crate::provider::models::ImageInfo;
+use crate::utils::{create_http, sanitize_filename};
+use chrono::{TimeZone, Utc};
 use image::ImageReader;
 use serde_json::{from_value, Value};
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
-use chrono::{TimeZone, Utc};
 
-use core::panic;
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::io::Cursor;
@@ -26,7 +25,8 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper
     );
 
     // Use the new v2 auth system to get a valid token
-    let token = get_reddit_token_for_provider().await
+    let token = get_reddit_token_for_provider()
+        .await
         .map_err(|e| format!("Authentication failed: {}", e))?;
 
     let fetcher = create_http();
@@ -37,7 +37,7 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper
     // Extract image data from response
     let images = response["data"]["children"].as_array().unwrap();
 
-    let mut extracted: Vec<Wallpaper> = vec![];    // loop over each reddit post
+    let mut extracted: Vec<Wallpaper> = vec![]; // loop over each reddit post
     for image in images.iter() {
         let img_data = &image["data"];
         let img_url = &img_data["url"].as_str().unwrap();
@@ -48,8 +48,14 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper
                 if let Some(images_array) = preview.get("images") {
                     if let Some(first_image) = images_array.get(0) {
                         if let Some(source) = first_image.get("source") {
-                            let width = source.get("width").and_then(|w| w.as_u64()).map(|w| w as u32);
-                            let height = source.get("height").and_then(|h| h.as_u64()).map(|h| h as u32);
+                            let width = source
+                                .get("width")
+                                .and_then(|w| w.as_u64())
+                                .map(|w| w as u32);
+                            let height = source
+                                .get("height")
+                                .and_then(|h| h.as_u64())
+                                .map(|h| h as u32);
                             (width, height)
                         } else {
                             (None, None)
@@ -65,12 +71,27 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper
             };
 
             // Extract subreddit name
-            let subreddit = img_data.get("subreddit").and_then(|s| s.as_str()).map(|s| s.to_string());            // Create Wallpaper struct with manual field assignment to include new fields
+            let subreddit = img_data
+                .get("subreddit")
+                .and_then(|s| s.as_str())
+                .map(|s| s.to_string()); // Create Wallpaper struct with manual field assignment to include new fields
             let image = Wallpaper {
-                id: img_data.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                id: img_data
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 url: img_url.to_string(),
-                title: img_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                author: img_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                title: img_data
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                author: img_data
+                    .get("author")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 width,
                 height,
                 subreddit,
@@ -106,8 +127,14 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
         if let Some(images) = preview.get("images").and_then(|i| i.as_array()) {
             if let Some(first_image) = images.first() {
                 if let Some(source) = first_image.get("source") {
-                    let width = source.get("width").and_then(|w| w.as_i64()).map(|w| w as i32);
-                    let height = source.get("height").and_then(|h| h.as_i64()).map(|h| h as i32);
+                    let width = source
+                        .get("width")
+                        .and_then(|w| w.as_i64())
+                        .map(|w| w as i32);
+                    let height = source
+                        .get("height")
+                        .and_then(|h| h.as_i64())
+                        .map(|h| h as i32);
                     (width, height)
                 } else {
                     (None, None)
@@ -124,19 +151,48 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
 
     // Manually construct ImageInfo with the additional fields
     let info = ImageInfo {
-        url: image_data.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        permalink: format!("https://reddit.com{}", 
-            image_data.get("permalink").and_then(|v| v.as_str()).unwrap_or("")),
-        title: image_data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        author: image_data.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        url: image_data
+            .get("url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        permalink: format!(
+            "https://reddit.com{}",
+            image_data
+                .get("permalink")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+        ),
+        title: image_data
+            .get("title")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        author: image_data
+            .get("author")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         created: {
-            let created_utc = image_data.get("created_utc").and_then(|v| v.as_f64()).unwrap_or(0.0) * 1000.0;
-            let created_utc = chrono::Utc.timestamp_millis_opt(created_utc as i64).unwrap();
+            let created_utc = image_data
+                .get("created_utc")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0)
+                * 1000.0;
+            let created_utc = chrono::Utc
+                .timestamp_millis_opt(created_utc as i64)
+                .unwrap();
             created_utc.to_rfc2822()
         },
-        score: image_data.get("score").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-        subreddit_name_prefixed: image_data.get("subreddit_name_prefixed")
-            .and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        score: image_data
+            .get("score")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as i32,
+        subreddit_name_prefixed: image_data
+            .get("subreddit_name_prefixed")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
         width,
         height,
     };
@@ -146,13 +202,11 @@ pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
     Ok(info)
 }
 
-
-pub async fn download(
-    info: DownloadInfo,
-    app_handle: AppHandle,
-) -> Result<String, Box<dyn Error>> {    // Get the save path from the store using new v2 API
+pub async fn download(info: DownloadInfo, app_handle: AppHandle) -> Result<String, Box<dyn Error>> {
+    // Get the save path from the store using new v2 API
     let store = app_handle.store("settings.json")?;
-    let save_path = store.get("path")
+    let save_path = store
+        .get("path")
         .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_else(|| "paperflow".to_string());
 
@@ -173,13 +227,11 @@ pub async fn download(
         .with_guessed_format()?
         .decode()?;
 
-        let name = sanitize_filename(&info.name);
-        let file_path = save_path.join(format!("{}.{}", &name, ext));
-
+    let name = sanitize_filename(&info.name);
+    let file_path = save_path.join(format!("{}.{}", &name, ext));
 
     // save the file
     let file_path = file_path.to_str().unwrap();
-
 
     image.save(file_path)?;
 

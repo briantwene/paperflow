@@ -1,2 +1,2 @@
-pub(crate) mod reddit;
 pub(crate) mod models;
+pub(crate) mod reddit;

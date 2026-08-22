@@ -21,6 +21,7 @@
     "store:allow-entries",
     "store:allow-length",
     "store:allow-has",
-    "store:default"
+    "store:default",
+    "opener:default"
   ]
 }
