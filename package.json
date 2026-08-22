@@ -34,6 +34,7 @@
     "@tanstack/router-devtools": "^1.120.18",
     "@tauri-apps/api": "~2.0.0",
     "@tauri-apps/plugin-dialog": "~2.0.0",
+    "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-store": "^2.2.0",
     "@tauri-apps/plugin-updater": "~2.0.0",
     "class-variance-authority": "^0.7.0",

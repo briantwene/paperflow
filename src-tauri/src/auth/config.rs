@@ -22,7 +22,7 @@ impl RedditAuthConfig {
         redirect_port: 32463,
         scopes: &["identity", "save", "read"],
     };
-    
+
     pub fn create_entry(&self, key_type: KeyType) -> Result<Entry, AuthError> {
         let key = match key_type {
             KeyType::Access => self.token_key,
@@ -31,14 +31,14 @@ impl RedditAuthConfig {
         };
         Entry::new(self.service_name, key).map_err(AuthError::from)
     }
-    
-    pub fn build_auth_url(&self) -> String {
+
+    pub fn build_auth_url(&self, state: &String) -> String {
         let redirect_url = format!("http://localhost:{}/callback", self.redirect_port);
         let scopes = self.scopes.join(",");
-        
+
         format!(
-            "https://www.reddit.com/api/v1/authorize?client_id={}&response_type=code&state=yooo&redirect_uri={}&duration=permanent&scope={}",
-            self.client_id, redirect_url, scopes
+            "https://www.reddit.com/api/v1/authorize?client_id={}&response_type=code&state={}&redirect_uri={}&duration=permanent&scope={}",
+            self.client_id, state, redirect_url, scopes
         )
     }
 }
