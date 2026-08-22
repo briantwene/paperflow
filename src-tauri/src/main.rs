@@ -1,11 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::collections::HashMap;
 use base64::Engine;
+use std::collections::HashMap;
 
 use provider::{
-    models::{DownloadInfo, Wallpaper, ImageInfo},
+    models::{DownloadInfo, ImageInfo, Wallpaper},
     reddit::download,
 };
 use serde_json::Value;
@@ -13,8 +13,8 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
 use crate::auth::reddit::start_reddit_login;
-use auth::disconnect;
 use auth::auth_status::get_auth_status;
+use auth::disconnect;
 use serde_json::Value as JsonValue;
 
 mod auth;
@@ -27,9 +27,11 @@ mod wallpaper;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_updater::Builder::new().build())        .invoke_handler(tauri::generate_handler![
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![
             fetch,
             view_img,
             start_reddit_login,
@@ -47,20 +49,20 @@ fn main() {
         ])
         .setup(|app| {
             let mut defaults = HashMap::new();
-            
+
             // Get the pictures directory using the new v2 API
-            let pictures_dir = app.path().picture_dir()
+            let pictures_dir = app
+                .path()
+                .picture_dir()
                 .map(|dir| dir.join("paperflow"))
                 .unwrap_or_else(|_| std::path::PathBuf::from("paperflow"));
-            
-            defaults.insert(
-                "path".to_string(),
-                pictures_dir.to_str().unwrap().into(),
-            );
+
+            defaults.insert("path".to_string(), pictures_dir.to_str().unwrap().into());
 
             defaults.insert("theme".to_string(), "dark".into());
-              // Create store using new v2 API
-            let store = app.store_builder("settings.json")
+            // Create store using new v2 API
+            let store = app
+                .store_builder("settings.json")
                 .defaults(defaults)
                 .build()?;
 
@@ -97,7 +99,6 @@ fn auth_status() -> Value {
     result
 }
 
-
 #[tauri::command]
 async fn reddit_download(app_handle: AppHandle, info: DownloadInfo) -> Result<JsonValue, String> {
     let result = download(info, app_handle).await.unwrap();
@@ -108,13 +109,14 @@ async fn reddit_download(app_handle: AppHandle, info: DownloadInfo) -> Result<Js
 #[tauri::command]
 async fn download_image_as_base64(url: String) -> Result<String, String> {
     println!("Downloading image for color extraction: {}", url);
-    
+
     match reqwest::get(&url).await {
         Ok(response) => {
             if response.status().is_success() {
                 match response.bytes().await {
                     Ok(bytes) => {
-                        let base64_string = base64::engine::general_purpose::STANDARD.encode(&bytes);
+                        let base64_string =
+                            base64::engine::general_purpose::STANDARD.encode(&bytes);
                         Ok(base64_string)
                     }
                     Err(e) => {
@@ -132,4 +134,3 @@ async fn download_image_as_base64(url: String) -> Result<String, String> {
         }
     }
 }
-

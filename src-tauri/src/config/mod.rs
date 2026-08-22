@@ -9,16 +9,13 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub fn load() -> Self {
-
-
         let server_url = "https://auth-paperflow.koyeb.app".to_string();
-        let base_url  =  "http://localhost:32463".to_string();
+        let base_url = "http://localhost:32463".to_string();
 
         // Load other configuration variables similarly
-        AppConfig { server_url, base_url }
+        AppConfig {
+            server_url,
+            base_url,
+        }
     }
 }
-
-
-
-

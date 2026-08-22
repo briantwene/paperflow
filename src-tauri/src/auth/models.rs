@@ -5,8 +5,7 @@ use serde::Deserialize;
 pub struct AccessTokenResponse {
     pub access_token: String,
     pub expires_in: i64,
-    pub refresh_token: String
-    // Other fields if needed
+    pub refresh_token: String, // Other fields if needed
 }
 
 #[derive(Debug, Deserialize)]
@@ -14,8 +13,6 @@ pub struct RefreshTokenResponse {
     pub access_token: String,
     pub expires_in: i64,
 }
-
-
 
 pub struct RedditApi {
     client: Client,
@@ -25,20 +22,16 @@ pub struct RedditApi {
     user_agent: String,
 }
 
-
-
 pub enum TokenContext {
     Expire,
     Initial,
-    Revoke
+    Revoke,
 }
-
 
 pub enum TokenResponses {
     RefreshTokenResponse,
-    AccessTokenResponse
+    AccessTokenResponse,
 }
-
 
 pub trait TokenData {
     fn get_access_token(&self) -> &str;
@@ -67,7 +60,6 @@ impl TokenData for AccessTokenResponse {
     }
 }
 
-
 impl TokenData for RefreshTokenResponse {
     fn get_access_token(&self) -> &str {
         &self.access_token
@@ -88,4 +80,3 @@ impl TokenData for RefreshTokenResponse {
         ""
     }
 }
-

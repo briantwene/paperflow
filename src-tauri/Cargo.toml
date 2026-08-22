@@ -42,6 +42,8 @@ http-body-util = "0.1"
 tiny_http = "0.12"
 thiserror = "1.0"
 async-trait = "0.1"
+tauri-plugin-opener = "2.5.4"
+rand = "0.8.7"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

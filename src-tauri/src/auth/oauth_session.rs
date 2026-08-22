@@ -6,100 +6,70 @@ use std::{
     collections::HashMap,
     sync::mpsc::{channel, Sender},
     thread,
-    time::Duration,
 };
+
+use tauri_plugin_opener::OpenerExt;
 use tiny_http::{Request, Response, Server, StatusCode};
 use url::Url;
-use tauri::Manager;
 
 pub struct OAuthSession {
     server: Server,
     app_handle: tauri::AppHandle,
     auth_url: String,
-    window_label: String,
 }
 
 impl OAuthSession {
     pub async fn new(app_handle: tauri::AppHandle, auth_url: String) -> AuthResult<Self> {
         let server = Server::http("127.0.0.1:32463")
             .map_err(|e| AuthError::Config(format!("Failed to start OAuth server: {}", e)))?;
-            
+
         log::info!("OAuth server started successfully on port 32463");
-        
+
         Ok(Self {
             server,
             app_handle,
             auth_url,
-            window_label: "reddit_auth".to_string(),
         })
     }
-    
-    pub async fn wait_for_callback(self) -> AuthResult<String> {
+
+    pub async fn wait_for_callback(self, expected_state: &str) -> AuthResult<String> {
         // Open auth window
-        Self::open_auth_window(&self.app_handle, &self.auth_url, &self.window_label).await?;
-        
+        Self::open_auth_browser(&self.app_handle, &self.auth_url).await?;
+
         // Set up communication channel
-        let (sender, receiver) = channel();
-        
-        // Clone app_handle and window_label for the cleanup thread
-        let app_handle_clone = self.app_handle.clone();
-        let window_label_clone = self.window_label.clone();
-        
+        let (sender, receiver) = channel::<AuthResult<String>>();
+        let expected_state = expected_state.to_string();
+
         // Start server in background thread
-        let server_handle = thread::spawn(move || {
-            Self::run_server(self.server, sender)
-        });
-        
+        let server_handle =
+            thread::spawn(move || Self::run_server(self.server, sender, &expected_state));
+
         // Wait for auth code
-        let auth_code = receiver.recv()
-            .map_err(|_| AuthError::Config("Failed to receive auth code".to_string()))?;
-            
-        // Close the auth window after a short delay
-        let close_handle = thread::spawn(move || {
-            thread::sleep(Duration::from_millis(500)); // Wait 0.5 seconds
-            if let Some(window) = app_handle_clone.get_webview_window(&window_label_clone) {
-                if let Err(e) = window.close() {
-                    log::warn!("Failed to close auth window: {}", e);
-                } else {
-                    log::info!("Auth window closed automatically");
-                }
-            }
-        });
-        
+        let auth_code = receiver
+            .recv()
+            .map_err(|_| AuthError::Config("Failed to receive auth code".to_string()))??;
+
         // Clean up
-        server_handle.join()
+        server_handle
+            .join()
             .map_err(|_| AuthError::Config("Server thread failed".to_string()))?;
-            
-        // Don't wait for the close thread to complete as it's just cleanup
-        let _ = close_handle.join();
-            
+
         log::info!("OAuth callback received successfully");
         Ok(auth_code)
     }
-      async fn open_auth_window(app_handle: &tauri::AppHandle, auth_url: &str, window_label: &str) -> AuthResult<()> {
-        let webview_url = tauri::WebviewUrl::External(
-            auth_url.parse()
-                .map_err(|e| AuthError::Config(format!("Invalid auth URL: {}", e)))?
-        );
-        
-        let window = tauri::WebviewWindowBuilder::new(app_handle, window_label, webview_url)
-            .fullscreen(false)
-            .resizable(true)
-            .title("Reddit Authentication")
-            .center()
-            .build()
-            .map_err(|e| AuthError::Config(format!("Failed to create auth window: {}", e)))?;
-            
-        window.show()
-            .map_err(|e| AuthError::Config(format!("Failed to show auth window: {}", e)))?;
-            
+    async fn open_auth_browser(app_handle: &tauri::AppHandle, auth_url: &str) -> AuthResult<()> {
+        let _ = app_handle
+            .opener()
+            .open_url(auth_url, None::<&str>)
+            .map_err(|error| AuthError::Config(format!("Failed to open browser: {error}")));
+
         log::info!("Authentication window opened successfully");
         Ok(())
     }
-    
-    fn run_server(server: Server, sender: Sender<String>) {
+
+    fn run_server(server: Server, sender: Sender<AuthResult<String>>, expected_state: &String) {
         loop {
-            match Self::handle_request(&server, &sender) {
+            match Self::handle_request(&server, &sender, expected_state) {
                 Ok(should_continue) => {
                     if !should_continue {
                         break;
@@ -113,50 +83,74 @@ impl OAuthSession {
         }
         log::info!("OAuth server stopped");
     }
-    
-    fn handle_request(server: &Server, sender: &Sender<String>) -> AuthResult<bool> {
-        let request = server.recv()
+
+    fn handle_request(
+        server: &Server,
+        sender: &Sender<AuthResult<String>>,
+        expected_state: &String,
+    ) -> AuthResult<bool> {
+        let request = server
+            .recv()
             .map_err(|e| AuthError::Config(format!("Server recv error: {}", e)))?;
-            
+
         let url = request.url();
         log::debug!("Received request: {}", url);
-        
+
         if url.starts_with("/callback") {
-            let auth_code = Self::handle_callback(request)?;
-            sender.send(auth_code)
-                .map_err(|e| AuthError::Config(format!("Failed to send auth code: {}", e)))?;
+            let callback_result = Self::handle_callback(request, expected_state);
+            sender
+                .send(callback_result)
+                .map_err(|_| AuthError::Config("Failed to deliver OAuth result".to_string()))?;
             Ok(false) // Stop server
         } else {
             log::debug!("Unhandled route: {}", url);
             Self::send_404_response(request)?;
             Ok(true) // Continue server
         }
-    }    fn handle_callback(request: Request) -> AuthResult<String> {
+    }
+    fn handle_callback(request: Request, expected_state: &str) -> AuthResult<String> {
         let base_url = AppConfig::load().server_url;
         let url = request.url();
         let parsed_url = Url::parse(&format!("{}{}", base_url, url))
             .map_err(|e| AuthError::Config(format!("Failed to parse callback URL: {}", e)))?;
-            
+
         let query_map: HashMap<String, String> = parsed_url.query_pairs().into_owned().collect();
-        
+
         // Check for error parameter first
         if let Some(error) = query_map.get("error") {
-            let error_description = query_map.get("error_description")
+            let error_description = query_map
+                .get("error_description")
                 .map(|s| s.as_str())
                 .unwrap_or("Unknown error");
+
+            Self::send_declined_response(request)?;
             return Err(AuthError::AuthenticationFailed {
-                message: format!("OAuth error: {} - {}", error, error_description)
+                message: format!("OAuth error: {} - {}", error, error_description),
             });
         }
-        
-        let code = query_map.get("code")
+
+        let returned_state =
+            query_map
+                .get("state")
+                .ok_or_else(|| AuthError::AuthenticationFailed {
+                    message: "No OAuth state returned".to_string(),
+                })?;
+
+        if returned_state != expected_state {
+            return Err(AuthError::AuthenticationFailed {
+                message: "OAuth state mismatch".to_string(),
+            });
+        }
+
+        let code = query_map
+            .get("code")
             .ok_or_else(|| AuthError::AuthenticationFailed {
-                message: "No authorization code received".to_string()
+                message: "No authorization code received".to_string(),
             })?
             .clone();
-            
+
         log::debug!("Authorization code received");
-        
+
         // Send minimal success response with auto-close
         let page = r#"
             <html>
@@ -203,14 +197,15 @@ impl OAuthSession {
                 </body>
             </html>
         "#;
-        
+
         let response = Response::new(StatusCode(200), vec![], page.as_bytes(), None, None);
-        request.respond(response)
+        request
+            .respond(response)
             .map_err(|e| AuthError::Config(format!("Failed to send response: {}", e)))?;
-            
+
         Ok(code)
     }
-    
+
     fn send_404_response(request: Request) -> AuthResult<()> {
         let page = r#"
             <html>
@@ -218,11 +213,28 @@ impl OAuthSession {
                 <body><h1>404 Not Found</h1></body>
             </html>
         "#;
-        
+
         let response = Response::new(StatusCode(404), vec![], page.as_bytes(), None, None);
-        request.respond(response)
+        request
+            .respond(response)
             .map_err(|e| AuthError::Config(format!("Failed to send 404 response: {}", e)))?;
-            
+
+        Ok(())
+    }
+
+    fn send_declined_response(request: Request) -> AuthResult<()> {
+        let page = r#"
+            <html>
+                <head><title>Authentication Declined</title></head>
+                <body><h1>404 Not Found</h1></body>
+            </html>
+        "#;
+
+        let response = Response::new(StatusCode(404), vec![], page.as_bytes(), None, None);
+        request
+            .respond(response)
+            .map_err(|e| AuthError::Config(format!("Failed to send 404 response: {}", e)))?;
+
         Ok(())
     }
 }
