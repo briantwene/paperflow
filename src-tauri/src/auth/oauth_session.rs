@@ -1,5 +1,8 @@
 use crate::{
-    auth::errors::{AuthError, AuthResult},
+    auth::errors::{
+        AuthError::{self, AuthenticationFailed},
+        AuthResult,
+    },
     config::AppConfig,
 };
 use std::{
@@ -16,6 +19,39 @@ pub struct OAuthSession {
     server: Server,
     app_handle: tauri::AppHandle,
     auth_url: String,
+}
+
+enum CallbackOutcome {
+    Success(String),
+    Failure(String),
+}
+
+enum CallbackPageKind {
+    Success,
+    Cancelled,
+    Invalid,
+    NotFound,
+}
+
+struct ParsedCallback {
+    error: Option<String>,
+    error_description: Option<String>,
+    state: Option<String>,
+    code: Option<String>,
+}
+
+impl ParsedCallback {
+    fn parse(url: &str) -> Self {
+        let parsed_url = Url::parse(url).unwrap();
+        let query_map: HashMap<String, String> = parsed_url.query_pairs().into_owned().collect();
+
+        Self {
+            error: query_map.get("error").cloned(),
+            error_description: query_map.get("error_description").cloned(),
+            state: query_map.get("state").cloned(),
+            code: query_map.get("code").cloned(),
+        }
+    }
 }
 
 impl OAuthSession {
@@ -58,10 +94,10 @@ impl OAuthSession {
         Ok(auth_code)
     }
     async fn open_auth_browser(app_handle: &tauri::AppHandle, auth_url: &str) -> AuthResult<()> {
-        let _ = app_handle
+        app_handle
             .opener()
             .open_url(auth_url, None::<&str>)
-            .map_err(|error| AuthError::Config(format!("Failed to open browser: {error}")));
+            .map_err(|error| AuthError::Config(format!("Failed to open browser: {error}")))?;
 
         log::info!("Authentication window opened successfully");
         Ok(())
@@ -109,132 +145,209 @@ impl OAuthSession {
         }
     }
     fn handle_callback(request: Request, expected_state: &str) -> AuthResult<String> {
-        let base_url = AppConfig::load().server_url;
+        let server_url = AppConfig::load().server_url;
+        let base_url = server_url;
         let url = request.url();
-        let parsed_url = Url::parse(&format!("{}{}", base_url, url))
-            .map_err(|e| AuthError::Config(format!("Failed to parse callback URL: {}", e)))?;
 
-        let query_map: HashMap<String, String> = parsed_url.query_pairs().into_owned().collect();
+        let parsed = ParsedCallback::parse(&format!("{}{}", base_url, url));
 
-        // Check for error parameter first
-        if let Some(error) = query_map.get("error") {
-            let error_description = query_map
-                .get("error_description")
-                .map(|s| s.as_str())
-                .unwrap_or("Unknown error");
+        let outcome = match &parsed {
+            ParsedCallback {
+                error: Some(error),
+                ..
+            } => {
+                Self::send_declined_response(request, error)?;
+                CallbackOutcome::Failure("OAuth error: {error}".to_string())
+            }
 
-            Self::send_declined_response(request)?;
-            return Err(AuthError::AuthenticationFailed {
-                message: format!("OAuth error: {} - {}", error, error_description),
-            });
-        }
+            ParsedCallback {
+                state: Some(state),
+                code: Some(code),
+                ..
+            } if state == expected_state => {
+                Self::send_success_response(request)?;
+                CallbackOutcome::Success(code.to_string())
+            }
 
-        let returned_state =
-            query_map
-                .get("state")
-                .ok_or_else(|| AuthError::AuthenticationFailed {
-                    message: "No OAuth state returned".to_string(),
-                })?;
+            ParsedCallback {
+                state: Some(state), ..
+            } if state != expected_state => {
+                Self::send_invalid_response(request)?;
+                CallbackOutcome::Failure("OAuth state mismatch".to_string())
+            }
 
-        if returned_state != expected_state {
-            return Err(AuthError::AuthenticationFailed {
-                message: "OAuth state mismatch".to_string(),
-            });
-        }
+            _ => CallbackOutcome::Failure("Invalid OAuth callback".to_string()),
+        };
 
-        let code = query_map
-            .get("code")
-            .ok_or_else(|| AuthError::AuthenticationFailed {
-                message: "No authorization code received".to_string(),
-            })?
-            .clone();
+        return match outcome {
+            CallbackOutcome::Success(code) => Ok(code),
+            CallbackOutcome::Failure(message) => Err(AuthenticationFailed { message }),
+        };
+    }
 
-        log::debug!("Authorization code received");
+    fn send_success_response(request: Request) -> AuthResult<()> {
+        Self::send_callback_page(request, CallbackPageKind::Success, None)
+    }
 
-        // Send minimal success response with auto-close
-        let page = r#"
+    fn send_404_response(request: Request) -> AuthResult<()> {
+        Self::send_callback_page(request, CallbackPageKind::NotFound, None)
+    }
+
+    fn send_declined_response(request: Request, error: &String) -> AuthResult<()> {
+        Self::send_callback_page(request, CallbackPageKind::Cancelled, Some(error))
+    }
+
+    fn send_invalid_response(request: Request) -> AuthResult<()> {
+        Self::send_callback_page(request, CallbackPageKind::Invalid, None)
+    }
+
+    fn send_callback_page(
+        request: Request,
+        kind: CallbackPageKind,
+        details: Option<&str>,
+    ) -> AuthResult<()> {
+        let (title, headline, message, accent, status_code, include_auto_close) = match kind {
+            CallbackPageKind::Success => (
+                "Authentication Complete",
+                "Authentication successful",
+                "You can close this tab and return to Paperflow.",
+                "#0ea5e9",
+                StatusCode(200),
+                true,
+            ),
+            CallbackPageKind::Cancelled => (
+                "Authentication Cancelled",
+                "Authentication cancelled",
+                "You can close this tab and return to Paperflow.",
+                "#f59e0b",
+                StatusCode(200),
+                false,
+            ),
+            CallbackPageKind::Invalid => (
+                "Invalid Authentication Callback",
+                "Invalid authentication callback",
+                "Please return to Paperflow and try again.",
+                "#ef4444",
+                StatusCode(200),
+                false,
+            ),
+            CallbackPageKind::NotFound => (
+                "404 Not Found",
+                "404 Not Found",
+                "This route is not handled by the OAuth callback server.",
+                "#64748b",
+                StatusCode(404),
+                false,
+            ),
+        };
+
+        let detail_html = details
+            .map(|value| {
+                format!(
+                    "<p class=\"detail\">Details: {}</p>",
+                    Self::escape_html(value)
+                )
+            })
+            .unwrap_or_default();
+
+        let auto_close_script = if include_auto_close {
+            "<script>setTimeout(() => { window.close(); }, 1000);</script>"
+        } else {
+            ""
+        };
+
+        let page = format!(
+            r#"
             <html>
                 <head>
-                    <title>Authentication Complete</title>
+                    <title>{}</title>
                     <style>
-                        body { 
-                            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+                        body {{
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                             display: flex;
                             justify-content: center;
                             align-items: center;
                             min-height: 100vh;
                             margin: 0;
-                            background: hsl(220 25% 97%);
-                            color: hsl(224 71% 4%);
-                        }
-                        .success {
-                            text-align: center;
-                            padding: 20px;
-                        }
-                        .checkmark {
-                            font-size: 3em;
-                            color: hsl(207 89% 50%);
-                            margin-bottom: 10px;
-                        }
-                        @media (prefers-color-scheme: dark) {
-                            body {
-                                background: hsl(224 71% 4%);
-                                color: hsl(213 31% 91%);
-                            }
-                        }
+                            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+                            color: #0f172a;
+                        }}
+                        .card {{
+                            width: min(560px, calc(100vw - 32px));
+                            border-radius: 14px;
+                            background: #ffffff;
+                            border: 1px solid #e2e8f0;
+                            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+                            padding: 24px;
+                        }}
+                        .badge {{
+                            width: 12px;
+                            height: 12px;
+                            border-radius: 999px;
+                            background: {};
+                            margin-bottom: 12px;
+                        }}
+                        h1 {{
+                            margin: 0 0 10px 0;
+                            font-size: 1.25rem;
+                            font-weight: 650;
+                        }}
+                        p {{
+                            margin: 0;
+                            line-height: 1.55;
+                            color: #334155;
+                        }}
+                        .detail {{
+                            margin-top: 12px;
+                            font-size: 0.9rem;
+                            color: #64748b;
+                        }}
+                        @media (prefers-color-scheme: dark) {{
+                            body {{
+                                background: linear-gradient(135deg, #020617, #0f172a);
+                                color: #e2e8f0;
+                            }}
+                            .card {{
+                                background: #111827;
+                                border-color: #1f2937;
+                            }}
+                            p {{
+                                color: #cbd5e1;
+                            }}
+                            .detail {{
+                                color: #94a3b8;
+                            }}
+                        }}
                     </style>
-                    <script>
-                        // Auto-close after 1 second
-                        setTimeout(() => {
-                            window.close();
-                        }, 1000);
-                    </script>
+                    {}
                 </head>
                 <body>
-                    <div class="success">
-                        <p>Authentication successful!</p>
-                    </div>
+                    <main class="card">
+                        <div class="badge"></div>
+                        <h1>{}</h1>
+                        <p>{}</p>
+                        {}
+                    </main>
                 </body>
             </html>
-        "#;
+        "#,
+            title, accent, auto_close_script, headline, message, detail_html
+        );
 
-        let response = Response::new(StatusCode(200), vec![], page.as_bytes(), None, None);
+        let response = Response::new(status_code, vec![], page.as_bytes(), None, None);
         request
             .respond(response)
-            .map_err(|e| AuthError::Config(format!("Failed to send response: {}", e)))?;
-
-        Ok(code)
-    }
-
-    fn send_404_response(request: Request) -> AuthResult<()> {
-        let page = r#"
-            <html>
-                <head><title>404 Not Found</title></head>
-                <body><h1>404 Not Found</h1></body>
-            </html>
-        "#;
-
-        let response = Response::new(StatusCode(404), vec![], page.as_bytes(), None, None);
-        request
-            .respond(response)
-            .map_err(|e| AuthError::Config(format!("Failed to send 404 response: {}", e)))?;
+            .map_err(|e| AuthError::Config(format!("Failed to send callback response: {}", e)))?;
 
         Ok(())
     }
 
-    fn send_declined_response(request: Request) -> AuthResult<()> {
-        let page = r#"
-            <html>
-                <head><title>Authentication Declined</title></head>
-                <body><h1>404 Not Found</h1></body>
-            </html>
-        "#;
-
-        let response = Response::new(StatusCode(404), vec![], page.as_bytes(), None, None);
-        request
-            .respond(response)
-            .map_err(|e| AuthError::Config(format!("Failed to send 404 response: {}", e)))?;
-
-        Ok(())
+    fn escape_html(value: &str) -> String {
+        value
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+            .replace('\'', "&#39;")
     }
 }
