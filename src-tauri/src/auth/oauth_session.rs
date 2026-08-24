@@ -11,6 +11,7 @@ use std::{
     thread,
 };
 
+use std::time::{Duration, Instant};
 use tauri_plugin_opener::OpenerExt;
 use tiny_http::{Request, Response, Server, StatusCode};
 use url::Url;
@@ -35,22 +36,21 @@ enum CallbackPageKind {
 
 struct ParsedCallback {
     error: Option<String>,
-    error_description: Option<String>,
     state: Option<String>,
     code: Option<String>,
 }
 
 impl ParsedCallback {
-    fn parse(url: &str) -> Self {
-        let parsed_url = Url::parse(url).unwrap();
+    fn parse(url: &str) -> AuthResult<Self> {
+        let parsed_url = Url::parse(url)
+            .map_err(|e| AuthError::Config(format!("Unable to parse URL: {}", e)))?;
         let query_map: HashMap<String, String> = parsed_url.query_pairs().into_owned().collect();
 
-        Self {
+        Ok(Self {
             error: query_map.get("error").cloned(),
-            error_description: query_map.get("error_description").cloned(),
             state: query_map.get("state").cloned(),
             code: query_map.get("code").cloned(),
-        }
+        })
     }
 }
 
@@ -104,15 +104,43 @@ impl OAuthSession {
     }
 
     fn run_server(server: Server, sender: Sender<AuthResult<String>>, expected_state: &String) {
+        let timeout = Duration::from_secs(5 * 60);
+        let deadline = Instant::now() + timeout;
+
         loop {
-            match Self::handle_request(&server, &sender, expected_state) {
-                Ok(should_continue) => {
-                    if !should_continue {
+            let now = Instant::now();
+            if now >= deadline {
+                let _ = sender.send(Err(AuthError::AuthenticationFailed {
+                    message: "Authentication timed out. Please try again.".to_string(),
+                }));
+                break;
+            }
+
+            let slice = Duration::from_secs(1);
+
+            match server.recv_timeout(slice) {
+                Ok(Some(request)) => {
+                    if request.url().starts_with("/callback") {
+                        let result = Self::handle_callback(request, expected_state);
+                        let _ = sender.send(result);
                         break;
+                    } else {
+                        log::debug!("Unhandled route: {}", request.url());
+                        if let Err(err) = Self::send_404_response(request) {
+                            log::warn!("Failed to send 404 response: {}", err);
+                        };
+                        continue;
                     }
                 }
+
+                Ok(None) => {
+                    continue;
+                }
                 Err(err) => {
-                    log::error!("OAuth server error: {:?}", err);
+                    let _ = sender.send(Err(AuthError::Config(format!(
+                        "Server recv timeout error: {}",
+                        err
+                    ))));
                     break;
                 }
             }
@@ -120,44 +148,19 @@ impl OAuthSession {
         log::info!("OAuth server stopped");
     }
 
-    fn handle_request(
-        server: &Server,
-        sender: &Sender<AuthResult<String>>,
-        expected_state: &String,
-    ) -> AuthResult<bool> {
-        let request = server
-            .recv()
-            .map_err(|e| AuthError::Config(format!("Server recv error: {}", e)))?;
-
-        let url = request.url();
-        log::debug!("Received request: {}", url);
-
-        if url.starts_with("/callback") {
-            let callback_result = Self::handle_callback(request, expected_state);
-            sender
-                .send(callback_result)
-                .map_err(|_| AuthError::Config("Failed to deliver OAuth result".to_string()))?;
-            Ok(false) // Stop server
-        } else {
-            log::debug!("Unhandled route: {}", url);
-            Self::send_404_response(request)?;
-            Ok(true) // Continue server
-        }
-    }
     fn handle_callback(request: Request, expected_state: &str) -> AuthResult<String> {
         let server_url = AppConfig::load().server_url;
         let base_url = server_url;
         let url = request.url();
 
-        let parsed = ParsedCallback::parse(&format!("{}{}", base_url, url));
+        let parsed = ParsedCallback::parse(&format!("{}{}", base_url, url))?;
 
         let outcome = match &parsed {
             ParsedCallback {
-                error: Some(error),
-                ..
+                error: Some(error), ..
             } => {
                 Self::send_declined_response(request, error)?;
-                CallbackOutcome::Failure("OAuth error: {error}".to_string())
+                CallbackOutcome::Failure(format!("OAuth error: {error}"))
             }
 
             ParsedCallback {
@@ -176,7 +179,10 @@ impl OAuthSession {
                 CallbackOutcome::Failure("OAuth state mismatch".to_string())
             }
 
-            _ => CallbackOutcome::Failure("Invalid OAuth callback".to_string()),
+            _ => {
+                Self::send_invalid_response(request)?;
+                CallbackOutcome::Failure("Invalid OAuth callback".to_string())
+            }
         };
 
         return match outcome {
