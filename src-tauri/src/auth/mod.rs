@@ -1,43 +1,15 @@
-use serde_json::Value;
-
 use crate::utils::generate_state;
 
-use self::reddit::do_token_action;
-
-pub(crate) mod auth_status;
 pub(crate) mod config;
 pub(crate) mod errors;
 pub(crate) mod http_client;
 pub(crate) mod models;
 pub(crate) mod oauth_session;
 pub(crate) mod provider;
-pub(crate) mod reddit;
 pub(crate) mod reddit_auth;
 pub(crate) mod reddit_provider;
 pub(crate) mod storage;
 pub(crate) mod tests;
-
-#[tauri::command]
-pub async fn disconnect(provider: String) -> Result<Value, ()> {
-    println!("DISCONNECT: {provider}");
-    match provider.to_lowercase().as_str() {
-        "reddit" => match do_token_action(models::TokenContext::Revoke, None).await {
-            Ok(_) => Ok(serde_json::json!({
-                "status": "success",
-                "message": "Successfully disconnected from Reddit"
-            })),
-            Err(_) => Err(()),
-        },
-        _ => Ok(invalid_provider_response()),
-    }
-}
-
-fn invalid_provider_response() -> Value {
-    serde_json::json!({
-        "status": "error",
-        "message": "Invalid provider"
-    })
-}
 
 // New improved commands using the refactored architecture
 #[tauri::command]
