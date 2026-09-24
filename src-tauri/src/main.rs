@@ -12,9 +12,6 @@ use serde_json::Value;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
-use crate::auth::reddit::start_reddit_login;
-use auth::auth_status::get_auth_status;
-use auth::disconnect;
 use serde_json::Value as JsonValue;
 
 mod auth;
@@ -34,9 +31,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             fetch,
             view_img,
-            start_reddit_login,
-            auth_status,
-            disconnect,
             reddit_download,
             download_image_as_base64,
             // New improved auth commands
@@ -89,14 +83,6 @@ async fn view_img(id: String) -> Result<ImageInfo, String> {
         Ok(images) => Ok(images),
         Err(_err) => Err("There was an error in getting the data".to_string()),
     }
-}
-
-#[tauri::command]
-fn auth_status() -> Value {
-    let providers = vec!["reddit", "example_provider1", "example_provider2"];
-    let result = get_auth_status(providers);
-
-    result
 }
 
 #[tauri::command]
