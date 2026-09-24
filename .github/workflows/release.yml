@@ -10,14 +10,16 @@ jobs:
   release-please:
     name: Create Release PR or Publish
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
@@ -39,6 +41,7 @@ jobs:
   build-and-release:
     name: Build Tauri App
     needs: release-please
+    if: needs.release-please.outputs.published == 'true'
     permissions:
       contents: write
     strategy:
@@ -56,10 +59,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
@@ -69,27 +72,32 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Get changelog content (Ubuntu only)
+      - name: Get changelog content
         id: changelog
-        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           if [ -f CHANGELOG.md ]; then
             CONTENT=$(awk -v version="$VERSION" '
               /^## / {
-                if ($0 ~ version) { found=1; next } else if (found) { exit }
+                if ($0 == "## " version) { found=1; next } else if (found) { exit }
               }
-              found && !/^## / { print }
-            ' CHANGELOG.md | sed '/^$/d' | head -20)
+              found { print }
+            ' CHANGELOG.md | sed '/^$/d')
             if [ -n "$CONTENT" ]; then
               echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
               echo "$CONTENT" >> $GITHUB_OUTPUT
@@ -102,7 +110,7 @@ jobs:
           fi
 
       - name: Build and Release with Tauri
-        uses: tauri-apps/tauri-action@v0.5.22
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -123,11 +131,13 @@ jobs:
             ## 🔄 Auto-Updates
 
             If you have PaperFlow already installed, the app will automatically check for updates and notify you when this version is available.
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
           releaseDraft: false
           prerelease: false
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
           updaterJsonPreferNsis: false
-          updaterJsonKeepUniversal: false
+          retryAttempts: 2
           args: ${{ matrix.args }}
 
   sync-develop:
@@ -137,7 +147,7 @@ jobs:
     if: always() && needs.build-and-release.result == 'success'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: main
