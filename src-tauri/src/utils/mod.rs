@@ -1,4 +1,5 @@
 use reqwest::Client;
+use rand::{thread_rng, Rng, distributions::Alphanumeric};
 
 pub fn create_http() -> Client {
     let ua = generate_user_agent();
@@ -17,8 +18,17 @@ pub fn generate_user_agent() -> String {
 
 // swap characters that aren't allowed in filenames to '_'
 pub fn sanitize_filename(filename: &str) -> String {
-    filename.chars().map(|c| match c {
-        '<' | '>' | ':' | '\"' | '/' | '\\' | '|' | '?' | '*' => '_',
-        _ => c,
-    }).collect()
+    filename
+        .chars()
+        .map(|c| match c {
+            '<' | '>' | ':' | '\"' | '/' | '\\' | '|' | '?' | '*' => '_',
+            _ => c,
+        })
+        .collect()
+}
+
+
+pub fn generate_state() -> String {
+    let mut rng = thread_rng();
+    (0..32).map(|_| rng.sample(Alphanumeric) as char).collect()
 }

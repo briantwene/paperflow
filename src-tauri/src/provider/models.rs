@@ -14,13 +14,10 @@ pub struct Wallpaper {
     pub subreddit: Option<String>,
 }
 
-
-
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ImageInfo {
-    pub url: String,                // This will be the image URL
-    pub permalink: String,          // This will be the Reddit post URL
+    pub url: String,       // This will be the image URL
+    pub permalink: String, // This will be the Reddit post URL
     pub title: String,
     pub author: String,
     #[serde(deserialize_with = "generate_date")]
@@ -29,8 +26,8 @@ pub struct ImageInfo {
     pub score: i32,
     #[serde(rename(serialize = "subreddit"))]
     pub subreddit_name_prefixed: String,
-    pub width: Option<i32>,         // Image width
-    pub height: Option<i32>,        // Image height
+    pub width: Option<i32>,  // Image width
+    pub height: Option<i32>, // Image height
 }
 
 pub fn generate_date<'de, D>(deserializer: D) -> Result<String, D::Error>
@@ -42,10 +39,8 @@ where
 
     info!("Deserialized created_utc: {}", created_utc);
 
-
     Ok(created_utc.to_rfc2822())
 }
-
 
 #[derive(Deserialize, Debug)]
 pub struct DownloadInfo {
