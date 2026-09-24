@@ -110,17 +110,21 @@ pub async fn get_images(subreddit: String, sort: String) -> Result<Vec<Wallpaper
 
 //fetch image info
 pub async fn get_info(image_id: String) -> Result<ImageInfo, Box<dyn Error>> {
-    let url = format!("https://reddit.com/{}.json", image_id);
-    println!("{url}");
+
+    let token = get_reddit_token_for_provider()
+        .await
+        .map_err(|e| format!("Authentication failed: {}", e))?;
+
+    let url = format!("https://oauth.reddit.com/api/info?id=t3_{}", image_id);
 
     //get and setup fetcher
     let fetcher = create_http();
 
     //run then get info method
-    let response = fetcher.get(url).send().await?;
-    let response = response.json::<Value>().await?;
+    let response = fetcher.get(url).bearer_auth(token).send().await?;
+    let response: Value = response.json().await?;
 
-    let image_data = &response[0]["data"]["children"][0]["data"];
+    let image_data = &response["data"]["children"][0]["data"];
 
     // Extract image dimensions from preview data if available
     let (width, height) = if let Some(preview) = image_data.get("preview") {
