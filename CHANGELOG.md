@@ -1,5 +1,13 @@
 # paperflow
 
+## 2.0.2
+
+### Patch Changes
+
+- d0d41b8: fixed an issue where image data fetching from reddit was failing on requesting a signle image
+- 747b08c: Updated callback decsion mapping and updated callback response pages
+- 6111c6e: Fix external Reddit OAuth login: validate the callback state, handle declined auth responses, and prevent hangs during browser redirect-based login.
+
 ## 2.0.1
 
 ### Patch Changes
